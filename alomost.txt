@@ -1,0 +1,797 @@
+#pragma ide diagnostic ignored "readability-use-anyofallof"
+#pragma ide diagnostic ignored "misc-no-recursion"
+#ifndef GRAPH_CPP_GRAPH_H
+#define GRAPH_CPP_GRAPH_H
+#include <bits/stdc++.h>
+using namespace std;
+// ___________________________begin graph node class____________________________
+template <class T>
+class GraphNode {
+public:
+    [[maybe_unused]] T data;
+    list<pair<T, double>> neighbors;
+    explicit GraphNode(T data) {
+        this->data = data;
+    }
+}; //___________________________end graph node class____________________________
+// _______________________________begin graph class_____________________________
+template <class T>
+class [[maybe_unused]] Graph {
+    unordered_map<T, GraphNode<T>*> nodes;
+    int V{};
+    int E{};
+    bool isDirected{};
+    [[maybe_unused]] void bfsUtil(T src,
+                                  [[maybe_unused]] const bool* visited,
+                                  [[maybe_unused]] const bool* recur);
+    [[maybe_unused]] void unconBfsUtil(T src, vector<T> adj[], vector<bool>& visited);
+
+    [[maybe_unused]] void dfsUtil([[maybe_unused]] T src,
+                                  [[maybe_unused]]
+                                  [[maybe_unused]] bool* visited,
+                                  [[maybe_unused]] bool* recur);
+
+    [[maybe_unused]] void dfsUtil(T src,
+                                  [[maybe_unused]] bool* visited);
+
+    [[maybe_unused]] bool hasCycleUtil([[maybe_unused]] T node,
+                                       bool* visited,
+                                       [[maybe_unused]] bool* recur, T parent);
+
+    [[maybe_unused]] bool isConnectedUtil([[maybe_unused]] int i,
+                                          [[maybe_unused]] bool* visited);
+    [[maybe_unused]] void traverse(T u, bool* visited);
+    [[maybe_unused]] bool cycleFromVertexUtil(T node, bool* visited);
+    [[maybe_unused]] void findBackEdgesUtil(T node,
+                                            [[maybe_unused]] bool* visited,
+                                            [[maybe_unused]] bool* recur,
+                                            [[maybe_unused]] vector<pair<T,T>>& backEdges);
+
+public:
+    [[maybe_unused]] explicit Graph(bool isDirected_ = false);
+    [[maybe_unused]] explicit Graph(int vertices, bool isDirected = false);
+    [[maybe_unused]] explicit Graph([[maybe_unused]] vector<T> nodes,
+                                    [[maybe_unused]] bool isDirected_ = false);
+    [[maybe_unused]] explicit Graph(const string& fileName,
+                                    char delimiter = ' ',
+                                    bool isDirected_ = false);
+    [[maybe_unused]] Graph(T* nodes, int size, bool isDirected_ = false);
+    [[maybe_unused]] void addVertex(T i);
+    [[maybe_unused]] void addEdge(T node1, T node2);
+    [[maybe_unused]] void addEdge(T node1, T node2, double weight);
+    [[maybe_unused]] void removeEdge(T node1, T node2);
+    [[maybe_unused]] void removeNode(T node);
+    [[maybe_unused]] void bfs([[maybe_unused]] T src);
+    [[maybe_unused]] void dfs(T src);
+    [[maybe_unused]] void print();
+    [[maybe_unused]] void printAllGraphData();
+    [[maybe_unused]] bool isConnected();
+    [[maybe_unused]] bool hasCycle();
+    [[maybe_unused]] bool cycleFromVertex(T node);
+    [[maybe_unused]] [[nodiscard]] bool directed() const;
+    [[maybe_unused]] [[nodiscard]] int getV() const;
+    [[maybe_unused]] [[nodiscard]] int getE() const;
+    [[maybe_unused]] vector<T> shortestPath(T src, T dest, bool print = false);
+    [[maybe_unused]] vector<vector<T>> shortestPaths(T src, bool print = false);
+
+
+}; // ____________________________end graph class_______________________________
+// ____________________begin graph class function definitions___________________
+// *****************************************************************************
+/**
+ * @brief Graph constructor
+ * @param isDirected_ : default is false, set to true if graph is directed
+ */
+template <class T>
+Graph<T>::Graph(bool isDirected_) {
+    isDirected = isDirected_;
+} // ____________________________end graph constructor__________________________
+/**
+ * @brief Graph constructor with number of vertices which will be set from
+ *  zero to number of vertices - 1
+ * @param vertices  : number of vertices
+ * @param isDirected_  : default is false, set to true if graph is directed
+ */
+template<class T>[[maybe_unused]]
+Graph<T>::Graph(int vertices, bool isDirected_) {
+    isDirected = isDirected_;
+    for (int i = 0; i < vertices; i++) {
+        addVertex(i);
+    }
+} // ____________________________end graph constructor__________________________
+/**
+ * @brief Graph constructor with vector of nodes
+ * @param nodes  : vector of nodes
+ * @param isDirected_  : default is false, set to true if graph is directed
+ */
+template<class T>[[maybe_unused]]
+Graph<T>::Graph([[maybe_unused]] vector<T> nodes, [[maybe_unused]] bool isDirected_) {
+    isDirected = isDirected_;
+    for ([[maybe_unused]] auto node : nodes) {
+        this->nodes[node] = new GraphNode<T>(node);
+        V++;
+    }
+} // ____________________________end graph constructor__________________________
+/**
+ * @brief Graph constructor with a file name and delimiter
+ * @param fileName  : file name
+ * @param delimiter  : delimiter
+ * @param isDirected_  : default is false, set to true if graph is directed
+ */
+template<class T>[[maybe_unused]]
+Graph<T>::Graph(const string& fileName,
+                [[maybe_unused]] char delimiter,
+                bool isDirected_) {
+    isDirected = isDirected_;
+    ifstream file(fileName);
+    if (!file.is_open()) {
+        cout << "File not found" << endl;
+        return;
+    }
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string node1, node2;
+        double weight;
+        ss >> node1 >> node2 >> weight;
+        addEdge(node1, node2, isDirected);
+        if (!isDirected) {
+            addEdge(node2, node1, isDirected);
+        }
+    }
+} // ____________________________end graph constructor__________________________
+/**
+ * @brief Graph constructor with an array of nodes
+ * @param nodes  : array of nodes
+ * @param size  : size of array
+ * @param isDirected_  : default is false, set to true if graph is directed
+ */
+template<class T>[[maybe_unused]]
+Graph<T>::Graph(T *nodes, int size, bool isDirected_) {
+    isDirected = isDirected_;
+    for (int i = 0; i < size; i++) {
+        this->nodes[nodes[i]] = new GraphNode<T>(nodes[i]);
+        V++;
+    }
+} // ____________________________end graph constructor__________________________
+
+/**
+ * @brief adds a vertex to the graph
+ * @param i  : node to be added
+ */
+template<class T>[[maybe_unused]]
+void Graph<T>::addVertex(T i) {
+    nodes[i] = new GraphNode<T>(i);
+    V++;
+} // ____________________________end addVertex__________________________________
+/**
+ * @brief adds an edge to the graph
+ * @param node1  : first node, in directed graph this is the tail
+ * @param node2  : second node, in directed graph this is the head\n
+ * if directed:  node1 ---> node2
+ */
+template<class T>
+void Graph<T>::addEdge(T node1, T node2) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("One of the nodes does not exist");
+    }
+    nodes[node1]->neighbors.push_back(make_pair(node2, 0));
+    if (!isDirected) {
+        nodes[node2]->neighbors.push_back(make_pair(node1, 0));
+        E++;
+    }
+    E++;
+} // ___________________________end addEdge_____________________________________
+/**
+ * @brief adds a weighted edge to the graph
+ * @param node1  : first node, in directed graph this is the tail
+ * @param node2  : second node, in directed graph this is the head\n
+ * @param weight  : weight of the edge\n
+ * if directed:  node1--(weight)-->node2
+ */
+template<class T>[[maybe_unused]]
+void Graph<T>::addEdge(T node1, T node2, double weight) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("One of the nodes does not exist");
+    }
+    nodes[node1]->neighbors.push_back(make_pair(node2, weight));
+    if (!isDirected) {
+        nodes[node2]->neighbors.push_back(make_pair(node1, weight));
+        E++;
+    }
+    E++;
+} // _____________________________end addEdge___________________________________
+/**
+ * @brief removes an edge from the graph
+ * @param node1  : first node
+ * @param node2  : second node
+ */
+template<class T>[[maybe_unused]]
+void Graph<T>::removeEdge(T node1, T node2) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("One of the nodes does not exist");
+    }
+    nodes[node1]->neighbors.remove_if([&](pair<T, double> neighbor) {
+        return neighbor.first == node2;
+    });
+    if (!isDirected) {
+        nodes[node2]->neighbors.remove_if([&](pair<T, double> neighbor) {
+            return neighbor.first == node1;
+        });
+    }
+    E--;
+} // ________________________end removeEdge_____________________________________
+/**
+ * @brief removes a vertex from the graph
+ * @param i  : node to be removed
+ */
+template<class T>[[maybe_unused]]
+void Graph<T>::removeNode([[maybe_unused]] T node) {
+    if (nodes.find(node) == nodes.end()) {
+        throw invalid_argument("Node does not exist");
+    }
+    for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+        removeEdge(node, neighbor.first);
+    }
+    nodes.erase(node);
+    V--;
+} // ________________________end removeNode_____________________________________
+/**
+ * @brief breadth first search
+ * @param src  : source node to start search
+ */
+template<class T> [[maybe_unused]]
+void Graph<T>::bfs([[maybe_unused]] T src) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    queue<T> q;
+    [[maybe_unused]] bool* visited = new bool[V]{false};
+    q.push(src);
+    visited[src] = true;
+    while (!q.empty()) {
+        T node = q.front();
+        q.pop();
+        cout << node << " ";
+        for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push(neighbor.first);
+                visited[neighbor.first] = true;
+            }
+        }
+    }
+    cout << endl;
+    delete[] visited;
+} // ________________________________end bfs____________________________________
+/**
+ * @brief depth first search
+ * @param src  : source node to start search
+ */
+template<class T> [[maybe_unused]]
+void Graph<T>::dfs([[maybe_unused]] T src) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    [[maybe_unused]] bool* visited = new bool[V]{false};
+    dfsUtil(src, visited);
+    delete[] visited;
+} // _________________________________end dfs___________________________________
+/**
+ * @brief prints the graph in adjacency list format
+ */
+template<class T> [[maybe_unused]]
+void Graph<T>::print() {
+    for ([[maybe_unused]] auto node : nodes) {
+        cout << node.first << ": ";
+        for ([[maybe_unused]] auto neighbor : node.second->neighbors) {
+            cout << neighbor.first << " ";
+        }
+        cout << endl;
+    }
+} // ________________________end print__________________________________________
+/**
+ * @brief prints the graph in adjacency matrix format with weights
+ */
+template<class T> [[maybe_unused]]
+void Graph<T>::printAllGraphData() {
+    cout << "V: " << V << endl;
+    cout << "E: " << E << endl;
+    // print the weights of the edges as well
+    for ([[maybe_unused]] auto node : nodes) {
+        cout << node.first << ":";
+        for ([[maybe_unused]] auto neighbor : node.second->neighbors) {
+            cout << "(" << neighbor.second << ")" << neighbor.first << " ";
+        }
+        cout << endl;
+    }
+} // ________________________end printAllGraphData______________________________
+/**
+ * @brief determines if the graph is connected
+ * @return  : true if the graph is connected, false otherwise
+ */
+template<class T>
+bool Graph<T>::isConnected() {
+    if (V == 1) {
+        return true;
+    }
+    bool *visited = new bool[V];
+    for (int i = 0; i < V; i++) {
+        visited[i] = false;
+    }
+    isConnectedUtil(0, visited);
+    for (int i = 0; i < V; i++) {
+        if (!visited[i]) {
+            delete[] visited;
+            return false;
+        }
+    }
+    delete[] visited;
+    return true;
+} // _____________________________end isConnected_______________________________
+/**
+ * @brief determines if the graph has a cycle
+ * @return  : true if the graph has a cycle, false otherwise
+ */
+template<class T>
+bool Graph<T>::hasCycle() {
+    bool* visited;
+    T parent = -1;
+    // set all nodes to unvisited
+    visited = new bool[V];
+    bool *recStack = new bool[V];
+    for (int i = 0; i < V; i++) {
+        recStack[i] = false;
+        visited[i] = false;
+    }
+    if (isDirected) {
+        for ([[maybe_unused]] auto node : nodes) {
+            if (hasCycleUtil(node.first, visited, recStack, parent)) {
+                delete[] recStack;
+                return true;
+            }
+        }
+    } else {
+        return hasCycleUtil(0, visited, recStack, parent);
+    }
+    delete[] recStack;
+    return false;
+} // _____________________________end hasCycle__________________________________
+/**
+ * @brief determines if there is a cycle from the given node
+ * @param node  : node to start search from
+ * @return  : true if there is a cycle, false otherwise
+ */
+template<class T>
+bool Graph<T>::cycleFromVertex(T node) {
+    if (nodes.find(node) == nodes.end()) {
+        throw invalid_argument("Node does not exist");
+    }
+    bool *visited = new bool[V];
+    for (int i = 0; i < V; i++) {
+        visited[i] = false;
+    }
+    return cycleFromVertexUtil(node, visited);
+} // _____________________________end cycleFromVertex___________________________
+/**
+ * @brief returns the isDirected property of the graph
+ * @return  : true if the graph is directed, false otherwise
+ */
+template<class T>
+[[maybe_unused]] bool Graph<T>::directed() const {
+    return this->isDirected;
+} // ________________________end directed_______________________________________
+/**
+ * @brief number of vertices in the graph
+ * @return  : number of vertices in the graph
+ */
+template<class T>[[maybe_unused]]
+int Graph<T>::getV() const {
+    return V;
+} // ________________________end getV___________________________________________
+/**
+ * @brief number of edges in the graph
+ * @return  : number of edges in the graph
+ */
+template<class T>[[maybe_unused]]
+int Graph<T>::getE() const {
+    return E;
+} // ________________________end getE___________________________________________
+/**
+ * @brief finds the shortest path between two nodes, if it exists
+ * @param src  : source node
+ * @param dest  : destination node
+ * @param print  : true if the path should be printed, false otherwise
+ * @return  : vector of nodes in the shortest path, empty vector if no path exists
+ */
+template<class T> [[maybe_unused]]
+vector<T> Graph<T>::shortestPath([[maybe_unused]] T src,
+                                 [[maybe_unused]] T dest,
+                                 [[maybe_unused]] bool print) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    if (nodes.find(dest) == nodes.end()) {
+        throw invalid_argument("Destination node does not exist");
+    }
+    if (src == dest) {
+        vector<T> path;
+        path.push_back(src);
+        return path;
+    }
+    vector<T> path;
+    [[maybe_unused]] bool *visited = new bool[V];
+    [[maybe_unused]] bool *recStack = new bool[V];
+    for ([[maybe_unused]] int i = 0; i < V; i++) {
+        visited[i] = false;
+        recStack[i] = false;
+    }
+    queue<T> q;
+    [[maybe_unused]] int* dist = new int[V]{0};
+    [[maybe_unused]] T* prev = new T[V]{-1};
+    q.push(src);
+    visited[src] = true;
+    dist[src] = 0;
+    while (!q.empty()) {
+        T u = q.front();
+        q.pop();
+        for ([[maybe_unused]] auto neighbor : nodes[u]->neighbors) {
+            if (!visited[neighbor.first]) {
+                visited[neighbor.first] = true;
+                dist[neighbor.first] = dist[u] + 1;
+                prev[neighbor.first] = u;
+                q.push(neighbor.first);
+            }
+        }
+    }
+    if (visited[dest]) {
+        T u = dest;
+        while (u != src) {
+            path.push_back(u);
+            u = prev[u];
+        }
+        path.push_back(src);
+        reverse(path.begin(), path.end());
+        if (print) {
+            cout << "Shortest path from " << src << " to " << dest << " is: ";
+            for ([[maybe_unused]] auto node : path) {
+                cout << node << " ";
+            }
+            cout << endl;
+        }
+        delete[] visited;
+        delete[] recStack;
+        delete[] dist;
+        delete[] prev;
+        return path;
+    } else {
+        cout << "No path from " << src << " to " << dest << endl;
+        delete[] visited;
+        delete[] recStack;
+        delete[] dist;
+        delete[] prev;
+        return path;
+    }
+} // ________________________end shortestPath___________________________________
+/**
+ * single source shortest path algorithm (SSSP) to find the shortest path from a
+ * source node to all other nodes in a unweighted graph
+ * @param src : source node
+ * @param print : true if the path should be printed, false otherwise
+ * @return : vector of nodes in the shortest path, empty vector if no path exists
+ */
+template<class T>[[maybe_unused]]
+vector<vector<T>> Graph<T>::shortestPaths([[maybe_unused]] T src,
+                                          [[maybe_unused]] bool print) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    // determine if the graph is weighted
+    [[maybe_unused]] bool weighted = false;
+    for ([[maybe_unused]] auto node : nodes) {
+        for ([[maybe_unused]] auto neighbor : node.second->neighbors) {
+            if (neighbor.second != 0) {
+                weighted = true;
+                continue;
+            }
+        }
+    }
+    if (print && weighted) {
+        cout << "***************************************************";
+        cout << "\nWARNING:  This search does not incorporate weights."
+        << "\nUse Dijkstra's algorithm for valid weighted search." << endl;
+        cout << "***************************************************\n";
+    }
+    vector<vector<T>> paths;
+    [[maybe_unused]] bool *visited = new bool[V];
+    [[maybe_unused]] bool *recStack = new bool[V];
+    for ([[maybe_unused]] int i = 0; i < V; i++) {
+        visited[i] = false;
+        recStack[i] = false;
+    }
+    queue<T> q;
+    [[maybe_unused]] int* dist = new int[V]{0};
+    [[maybe_unused]] T* prev = new T[V]{-1};
+
+    q.push(src);
+    visited[src] = true;
+    dist[src] = 0;
+    while (!q.empty()) {
+        T u = q.front();
+        q.pop();
+        for ([[maybe_unused]] auto neighbor : nodes[u]->neighbors) {
+            if (!visited[neighbor.first]) {
+                visited[neighbor.first] = true;
+                dist[neighbor.first] = dist[u] + 1;
+                prev[neighbor.first] = u;
+                q.push(neighbor.first);
+            }
+        }
+    }
+    for ([[maybe_unused]] int i = 0; i < V; i++) {
+        if (visited[i]) {
+            vector<T> path;
+            T u = i;
+            while (u != src) {
+                path.push_back(u);
+                u = prev[u];
+            }
+            path.push_back(src);
+            reverse(path.begin(), path.end());
+            paths.push_back(path);
+            if (print) {
+                cout << "Shortest path from " << src << " to " << i << " is: ";
+                for ([[maybe_unused]] auto node : path) {
+                    cout << node << " ";
+                }
+                cout << endl;
+            }
+        }
+    }
+    delete[] visited;
+    delete[] recStack;
+    delete[] dist;
+    delete[] prev;
+    return paths;
+} // ________________________end shortestPaths__________________________________
+
+
+// ___________________________bfsUtil___________________________________________
+/**
+ * @brief private helper function to help with bfs traversals
+ * @param src  source node
+ * @param visited  vector of visited nodes
+ * @param recur  vector representing a stack of nodes to keep track of what node
+ *  a node was visited from
+ */
+template<class T> [[maybe_unused]]
+void Graph<T>::bfsUtil(
+        [[maybe_unused]] T src, [[maybe_unused]] const bool* visited,
+        [[maybe_unused]] const bool* recur) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    queue<T> q;
+    q.push(src);
+    visited[src] = true;
+    recur[src] = true;
+    while (!q.empty()) {
+        T node = q.front();
+        q.pop();
+        cout << node << " ";
+        for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push(neighbor.first);
+                visited[neighbor.first] = true;
+                if (!isDirected) {
+                    recur[neighbor.first] = true;
+                }
+            }
+        }
+    }
+} // ________________________end bfsUtil________________________________________
+
+template<class T>
+void Graph<T>::unconBfsUtil(T src, vector<T> *adj, vector<bool> &visited) {
+    list<T> q;
+    visited[src] = true;
+    q.push_back(src);
+    while (!q.empty()) {
+        T node = q.front();
+        cout << node << " ";
+        q.pop_front();
+        for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push_back(neighbor.first);
+                visited[neighbor.first] = true;
+            }
+        }
+    }
+}
+
+/**
+ * @brief private helper function to help with dfs traversals
+ * @param src  source node
+ * @param visited  vector of visited nodes
+ * @param recur vector representing a stack of nodes to keep track of what node
+ *  a node was visited from
+ */
+template<class T>
+void Graph<T>::dfsUtil([[maybe_unused]] T src,
+                       [[maybe_unused]] bool *visited,
+                       [[maybe_unused]] bool *recur) {
+    visited[src] = true;
+    recur[src] = true;
+    for ([[maybe_unused]] auto neighbor : nodes[src]->neighbors) {
+        if (!visited[neighbor.first]) {
+            dfsUtil(neighbor.first, visited, recur);
+        }
+    }
+    recur[src] = false;
+} // ________________________end dfsUtil________________________________________
+/**
+ * @brief private helper function to help with dfs traversals of undirected
+ * graphs
+ * @param src  source node
+ * @param visited  vector of visited nodes
+ */
+template<class T> [[maybe_unused]]
+void Graph<T>::dfsUtil([[maybe_unused]]  T src,
+                       [[maybe_unused]] bool* visited) {
+    visited[src] = true;
+    for ([[maybe_unused]] auto neighbor : nodes[src]->neighbors) {
+        if (!visited[neighbor.first]) {
+            dfsUtil(neighbor.first, visited);
+        }
+    }
+    cout << src << " ";
+} // ________________________end dfsUtil________________________________________
+
+//___________________________isCyclicUtil_______________________________________
+/**
+ * @brief private helper function for finding cycles in the graph
+ * @param node  node to start the search from
+ * @param visited  vector of visited nodes
+ * @param recur vector representing a stack of nodes
+ * @param parent  parent node of the current node
+ * @return  true if a cycle is found, false otherwise
+ */
+template<class T>[[maybe_unused]]
+bool Graph<T>::hasCycleUtil([[maybe_unused]] T node,
+                            [[maybe_unused]] bool* visited,
+                            [[maybe_unused]] bool* recur, T parent) {
+    if (isDirected) {
+        if (!visited[node]) {
+            visited[node] = true;
+            recur[node] = true;
+            // recur all the vertices adjacent to this vertex
+            for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+                if (!visited[neighbor.first] &&
+                hasCycleUtil(neighbor.first, visited, recur, parent)) {
+                    return true;
+                } else if (recur[neighbor.first]) {
+                    return true;
+                }
+            }
+        }
+        recur[node] = false;
+        return false;
+    } else {
+        visited[node] = true;
+        recur[node] = true;
+        for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+            if (!visited[neighbor.first]) {
+                bool cycle = hasCycleUtil(neighbor.first, visited, recur, node);
+                if (cycle) {
+                    return true;
+                }
+            } else if (neighbor.first != parent) {
+                return true;
+            }
+        }
+        return false;
+    }
+} // ________________________end isCyclicUtil___________________________________
+/**
+ * @brief private helper function to determine if graph is connected
+ * @param i node to start the search from
+ * @param visited  vector of visited nodes
+ * @param recur  vector representing a stack of nodes
+ * @return true if the graph is connected, false otherwise
+ */
+template<class T>
+bool Graph<T>::isConnectedUtil([[maybe_unused]] int i,
+                               [[maybe_unused]] bool* visited) {
+    visited[i] = true;
+    if (!isDirected) { // undirected
+        for ([[maybe_unused]] auto neighbor : nodes[i]->neighbors) {
+            if (!visited[neighbor.first]) {
+                [[maybe_unused]] bool cycle =
+                        isConnectedUtil(neighbor.first, visited);
+                if (cycle) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    } else { // directed
+        traverse(i, visited);
+    }
+}
+/**
+ * @brief basic traversal of the graph
+ * @param u node to look at in the visited vector
+ * @param visited  vector of visited nodes
+ */
+template<class T>
+void Graph<T>::traverse(T u, bool *visited) {
+    visited[u] = true;
+    for ([[maybe_unused]] auto neighbor : nodes[u]->neighbors) {
+        if (!visited[neighbor.first]) {
+            traverse(neighbor.first, visited);
+        }
+    }
+} // ________________________end traverse_______________________________________
+
+/**
+ * private utility function to determine if graph has a cycle from a given node
+ * @param node  node to start the search from
+ * @param visited  vector of visited nodes
+ * @param parent  parent node of the current node
+ */
+template<class T>
+bool Graph<T>::cycleFromVertexUtil(T node, bool *visited) {
+    visited[node] = true;
+    for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+        if (!visited[neighbor.first]) {
+            if (cycleFromVertexUtil(neighbor.first, visited)) {
+                return true;
+            }
+        } else if (neighbor.first != node) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template<class T>
+void Graph<T>::findBackEdgesUtil(T node,
+                                 bool *visited,
+                                 bool *recur,
+                                 vector<pair<T, T>> &backEdges) {
+    visited[node] = true;
+    recur[node] = true;
+    for ([[maybe_unused]] auto neighbor : nodes[node]->neighbors) {
+        if (!visited[neighbor.first]) {
+            findBackEdgesUtil(neighbor.first, visited, recur);
+        } else if (recur[neighbor.first]) {
+            backEdges.push_back(make_pair(node, neighbor.first));
+        }
+    }
+    recur[node] = false;
+}
+
+
+// ________________________end cycleFromVertexUtil____________________________
+
+#endif //GRAPH_CPP_GRAPH_H
+// ____________________________Static functions_________________________________
+/**
+ * @brief static function to determine if a graph has a cycle
+ * @param V  number of vertices in the graph
+ * @param edges  vector of edges in the graph
+ * @param directed  default is false, set to true if graph is directed
+ * @return true if the graph has a cycle, false otherwise
+ */
+static bool contains_cycle(int V,
+                           const vector<pair<int,int> >& edges,
+                           bool directed = false) {
+    //Complete this method
+    Graph<int> g(directed);
+    for (int i = 0; i < V; i++) {
+        g.addVertex(i);
+    }
+    for(auto edge:edges){
+        g.addEdge(edge.first,edge.second);
+    }
+    return g.hasCycle();
+}

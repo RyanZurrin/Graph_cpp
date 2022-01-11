@@ -1,0 +1,409 @@
+#include 
+using namespace std;
+// ___________________________begin graph node class____________________________
+template 
+class GraphNode {
+public:
+    [[maybe_unused]] T data;
+    list&gt; neighbors;
+    explicit GraphNode(T data) {
+        this-&gt;data = data;
+    }
+}; //___________________________end graph node class____________________________
+// _______________________________begin graph class_____________________________
+template 
+class [[maybe_unused]] Graph {
+    unordered_map*&gt; nodes;
+    int V{};
+    int E{};
+    [[maybe_unused]] void bfsUtil(T src, [[maybe_unused]] unordered_map &amp;visited);
+    [[maybe_unused]] void dfsUtil(T src, [[maybe_unused]] bool* visited);
+    [[maybe_unused]] bool hasCycleUtil(T node, bool* visited, int parent, bool undirected = false);
+public:
+    Graph() = default;
+
+    [[maybe_unused]] explicit Graph([[maybe_unused]] vector nodes);
+    [[maybe_unused]] explicit Graph(T* nodes, int size);
+    [[maybe_unused]] explicit Graph(const string&amp; fileName, char delimiter = ' ');
+    [[maybe_unused]] void addVertex(T i);
+    [[maybe_unused]] void addEdge(T node1, T node2, bool undirected = false);
+    [[maybe_unused]] void addWeightedEdge(T node1, T node2, double weight, bool undirected = false);
+    [[maybe_unused]] void removeEdge(T node1, T node2, bool undirected = false);
+    [[maybe_unused]] void removeNode(T node);
+    [[maybe_unused]] void bfs([[maybe_unused]] T src);
+    [[maybe_unused]] void dfs(T src);
+    [[maybe_unused]] void print();
+    [[maybe_unused]] void printAllGraphData();
+    [[maybe_unused]] bool hasCycle(bool undirected = false);
+    [[maybe_unused]] [[nodiscard]] int getV() const;
+    [[maybe_unused]] [[nodiscard]] int getE() const;
+    [[maybe_unused]] vector shortestPath(T src, T dest, bool print = false);
+    [[maybe_unused]] vector&gt; shortestPaths(T src, bool print = false);
+
+
+
+}; // ____________________________end graph class_______________________________
+// _____________________________function definitions____________________________
+// _____________________________begin graph class_______________________________
+template[[maybe_unused]]
+Graph::Graph([[maybe_unused]] vector nodes) {
+    for ([[maybe_unused]] auto node : nodes) {
+        this-&gt;nodes[node] = new GraphNode(node);
+        V++;
+    }
+} // ___________________________end constructor_________________________________
+// _____________________________begin constructor_______________________________
+template[[maybe_unused]]
+Graph::Graph(T *nodes, int size) {
+    for (int i = 0; i &lt; size; i++) {
+        this-&gt;nodes[nodes[i]] = new GraphNode(nodes[i]);
+        V++;
+    }
+} // ___________________________end constructor_________________________________
+// ______________________________addVertex______________________________________
+template[[maybe_unused]]
+void Graph::addVertex(T i) {
+    nodes[i] = new GraphNode(i);
+    V++;
+} // ____________________________end addVertex__________________________________
+//__________________________________addEdge_____________________________________
+template
+void Graph::addEdge(T node1, T node2, bool undirected) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("One of the nodes does not exist");
+    }
+    nodes[node1]-&gt;neighbors.push_back(make_pair(node2, 1));
+    if (undirected) {
+        nodes[node2]-&gt;neighbors.push_back(make_pair(node1, 1));
+        E++;
+    }
+    E++;
+} // ___________________________end addEdge_____________________________________
+// ___________________________addWeightedEdge___________________________________
+template[[maybe_unused]]
+void Graph::addWeightedEdge(T node1, T node2, double weight, bool undirected) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("One of the nodes does not exist");
+    }
+    nodes[node1]-&gt;neighbors.push_back(make_pair(node2, weight));
+    if (undirected) {
+        nodes[node2]-&gt;neighbors.push_back(make_pair(node1, weight));
+        E++;
+    }
+    E++;
+} // ________________________end addWeightedEdge________________________________
+// _____________________________removeEdge______________________________________
+template[[maybe_unused]]
+void Graph::removeEdge(T node1, T node2, bool undirected) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("One of the nodes does not exist");
+    }
+    nodes[node1]-&gt;neighbors.remove_if([&amp;](pair neighbor) {
+        return neighbor.first == node2;
+    });
+    if (undirected) {
+        nodes[node2]-&gt;neighbors.remove_if([&amp;](pair neighbor) {
+            return neighbor.first == node1;
+        });
+    }
+    E--;
+} // ________________________end removeEdge_____________________________________
+// ____________________________removeNode_______________________________________
+template[[maybe_unused]]
+void Graph::removeNode([[maybe_unused]] T node) {
+    if (nodes.find(node) == nodes.end()) {
+        throw invalid_argument("Node does not exist");
+    }
+    for ([[maybe_unused]] auto neighbor : nodes[node]-&gt;neighbors) {
+        removeEdge(node, neighbor.first);
+    }
+    nodes.erase(node);
+    V--;
+} // ________________________end removeNode_____________________________________
+// ______________________________print__________________________________________
+template [[maybe_unused]]
+void Graph::print() {
+    for ([[maybe_unused]] auto node : nodes) {
+        cout &lt;&lt; node.first &lt;&lt; ": ";
+        for ([[maybe_unused]] auto neighbor : node.second-&gt;neighbors) {
+            cout &lt;&lt; neighbor.first &lt;&lt; " ";
+        }
+        cout &lt;&lt; endl;
+    }
+} // ________________________end print__________________________________________
+// ______________________fill graph from file___________________________________
+template[[maybe_unused]]
+Graph::Graph(const string&amp; fileName, [[maybe_unused]] char delimiter) {
+    ifstream file(fileName);
+    if (!file.is_open()) {
+        cout &lt;&lt; "File not found" &lt;&lt; endl;
+        return;
+    }
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string node1;
+        string node2;
+        double weight;
+        ss &gt;&gt; node1;
+        ss &gt;&gt; node2;
+        ss &gt;&gt; weight;
+        addEdge(node1, node2, weight);
+    }
+} // ________________________end constructor____________________________________
+//______________________________getV____________________________________________
+template[[maybe_unused]]
+int Graph::getV() const {
+    return V;
+} // ________________________end getV___________________________________________
+// ___________________________getE______________________________________________
+template[[maybe_unused]]
+int Graph::getE() const {
+    return E;
+} // ________________________end getE___________________________________________
+// _______________________printAllGraphData_____________________________________
+template [[maybe_unused]]
+void Graph::printAllGraphData() {
+    cout &lt;&lt; "V: " &lt;&lt; V &lt;&lt; endl;
+    cout &lt;&lt; "E: " &lt;&lt; E &lt;&lt; endl;
+    // print the weights of the edges as well
+    for ([[maybe_unused]] auto node : nodes) {
+        cout &lt;&lt; node.first &lt;&lt; ":";
+        for ([[maybe_unused]] auto neighbor : node.second-&gt;neighbors) {
+            cout &lt;&lt; "(" &lt;&lt; neighbor.second &lt;&lt; ")" &lt;&lt; neighbor.first &lt;&lt; " ";
+        }
+        cout &lt;&lt; endl;
+    }
+} // ________________________end printAllGraphData______________________________
+// _______________________________bfs___________________________________________
+template [[maybe_unused]]
+void Graph::bfs([[maybe_unused]] T src) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    queue q;
+    [[maybe_unused]] bool* visited = new bool[V]{false};
+    q.push(src);
+    visited[src] = true;
+    while (!q.empty()) {
+        T node = q.front();
+        q.pop();
+        cout &lt;&lt; node &lt;&lt; " ";
+        for ([[maybe_unused]] auto neighbor : nodes[node]-&gt;neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push(neighbor.first);
+                visited[neighbor.first] = true;
+            }
+        }
+    }
+    cout &lt;&lt; endl;
+    delete[] visited;
+} // ________________________end bfs____________________________________________
+// ___________________________dfs_______________________________________________
+template [[maybe_unused]]
+void Graph::dfs([[maybe_unused]] T src) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    [[maybe_unused]] bool* visited = new bool[V]{false};
+    dfsUtil(src, visited);
+    delete[] visited;
+} // _________________________end dfs___________________________________________
+// ___________________________bfsUtil___________________________________________
+template [[maybe_unused]]
+void Graph::bfsUtil(
+        [[maybe_unused]] T src, [[maybe_unused]] unordered_map &amp;visited) {
+    queue q;
+    q.push(src);
+    visited[src] = true;
+    while (!q.empty()) {
+        T node = q.front();
+        q.pop();
+        cout &lt;&lt; node &lt;&lt; " ";
+        for ([[maybe_unused]] auto neighbor : nodes[node]-&gt;neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push(neighbor.first);
+                visited[neighbor.first] = true;
+            }
+        }
+    }
+} // ________________________end bfsUtil________________________________________
+// _____________________________dfsUtil_________________________________________
+template [[maybe_unused]]
+void Graph::dfsUtil(
+        [[maybe_unused]]  T src, [[maybe_unused]] bool* visited) {
+    visited[src] = true;
+    for (auto neighbor : nodes[src]-&gt;neighbors) {
+        if (!visited[neighbor.first]) {
+            dfsUtil(neighbor.first, visited);
+        }
+    }
+    cout &lt;&lt; src &lt;&lt; " ";
+} // ________________________end dfsUtil________________________________________
+// ___________________________isCyclic__________________________________________
+template
+bool Graph::hasCycle(bool undirected) {
+    bool *visited = new bool[V]{false};
+    return hasCycleUtil(0, visited, -1, undirected);
+
+} // ________________________end hasCyclic______________________________________
+
+//___________________________isCyclicUtil_______________________________________
+template
+bool Graph::hasCycleUtil(T node, bool* visited, int parent, bool undirected) {
+    visited[node] = true;
+    if (undirected) {
+        for (auto neighbor : nodes[node]-&gt;neighbors) {
+            if (!visited[neighbor.first]) {
+                bool cycle = hasCycleUtil(neighbor.first, visited, node, undirected);
+                if (cycle) {
+                    return true;
+                }
+            } else if (neighbor.first != parent) {
+                return true;
+            }
+        }
+        return false;
+    } else {
+        for (auto neighbor : nodes[node]-&gt;neighbors) {
+            if (!visited[neighbor.first]) {
+                return hasCycleUtil(neighbor.first, visited, node, undirected);
+            } else if (neighbor.first != parent) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+} // ________________________end isCyclicUtil___________________________________
+
+// _______________________shortestPath method___________________________________
+template [[maybe_unused]]
+vector Graph::shortestPath(
+        [[maybe_unused]] T src,[[maybe_unused]] T dest,[[maybe_unused]] bool print) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    if (nodes.find(dest) == nodes.end()) {
+        throw invalid_argument("Destination node does not exist");
+    }
+    unordered_map visited;
+    queue q;
+    [[maybe_unused]] int* dist = new int[V]{0};
+    [[maybe_unused]] T* prev = new T[V]{-1};
+    q.push(src);
+    visited[src] = true;
+    dist[src] = 0;
+    while (!q.empty()) {
+        T node = q.front();
+        q.pop();
+        for ([[maybe_unused]] auto neighbor : nodes[node]-&gt;neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push(neighbor.first);
+                visited[neighbor.first] = true;
+                dist[neighbor.first] = dist[node] + 1;
+                prev[neighbor.first] = node;
+            }
+        }
+    }
+    vector path;
+    T node = dest;
+    while (node != src) {
+        path.push_back(node);
+        node = prev[node];
+    }
+    path.push_back(src);
+    reverse(path.begin(), path.end());
+    if (print) {
+        cout &lt;&lt; "Shortest path from " &lt;&lt; src &lt;&lt; " to " &lt;&lt; dest &lt;&lt; " is: ";
+        for ([[maybe_unused]] auto node_ : path) {
+            cout &lt;&lt; node_ &lt;&lt; " ";
+        }
+        cout &lt;&lt; endl;
+    }
+    delete[] dist;
+    delete[] prev;
+    return path;
+} // ________________________end shortestPath___________________________________
+// ______________single source shortest path algorithm (SSSP)___________________
+template[[maybe_unused]]
+vector&gt; Graph::shortestPaths(
+        [[maybe_unused]] T src, [[maybe_unused]] bool print) {
+    if (nodes.find(src) == nodes.end()) {
+        throw invalid_argument("Source node does not exist");
+    }
+    queue q;
+    [[maybe_unused]] bool* visited = new bool[V]{false};
+    [[maybe_unused]]int* dist = new int[V]{0};
+    [[maybe_unused]]int* parent = new int[V]{-1};
+    q.push(src);
+    visited[src] = true;
+    parent[src] = src;
+    dist[src] = 0;
+
+    while (!q.empty()) {
+        T node = q.front();
+        q.pop();
+        for ([[maybe_unused]] auto neighbor : nodes[node]-&gt;neighbors) {
+            if (!visited[neighbor.first]) {
+                q.push(neighbor.first);
+                visited[neighbor.first] = true;
+                parent[neighbor.first] = node;
+                dist[neighbor.first] = dist[node] + 1;
+            }
+        }
+    }
+    // print shortest paths
+    if(print) {
+        cout &lt;&lt; "Shortest paths from " &lt;&lt; src &lt;&lt; ": " &lt;&lt; endl;
+        for ([[maybe_unused]] int i = 0; i &lt; V; i++) {
+            if (visited[i]) {
+                cout &lt;&lt; "Vertex " &lt;&lt; i &lt;&lt; ": ";
+                cout &lt;&lt; "Distance = " &lt;&lt; dist[i] &lt;&lt; ", ";
+                cout &lt;&lt; "Path = ";
+                T node = i;
+                vector path;
+                while (node != src) {
+                    path.push_back(node);
+                    node = parent[node];
+                }
+                path.push_back(src);
+                reverse(path.begin(), path.end());
+                for ([[maybe_unused]] auto node_ : path) {
+                    cout &lt;&lt; node_ &lt;&lt; " ";
+                }
+                cout &lt;&lt; endl;
+            }
+        }
+    }
+    vector&gt; paths;
+    for ([[maybe_unused]] int i = 0; i &lt; V; i++) {
+        if (visited[i]) {
+            vector path;
+            T node = i;
+            while (node != src) {
+                path.push_back(node);
+                node = parent[node];
+            }
+            path.push_back(src);
+            reverse(path.begin(), path.end());
+            paths.push_back(path);
+        }
+    }
+    delete[] visited;
+    delete[] dist;
+    delete[] parent;
+    return paths;
+}// ________________________end shortestPaths__________________________________
+bool contains_cycle(int V,vector &gt; edges){
+    //Complete this method
+    Graph g;
+    for (int i = 0; i &lt; V; i++) {
+        g.addVertex(i);
+    }
+    for(auto edge:edges){
+        g.addEdge(edge.first,edge.second, true);
+    }
+    return g.hasCycle(true);
+}

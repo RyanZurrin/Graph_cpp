@@ -1,0 +1,176 @@
+//
+// Created by Ryan.Zurrin001 on 1/9/2022.
+//
+/*
+#ifndef GRAPH_CPP_GRAPH_H
+#define GRAPH_CPP_GRAPH_H
+#include <bits/stdc++.h>
+using namespace std;
+
+template <class T>
+class VertexNode {
+    //T data;
+public:
+    int id{};
+    VertexNode() {
+        cout << "VertexNode()" << endl;
+        id = 0;
+        //data = T();
+        cout << "leaving VertexNode()" << endl;
+    }
+    explicit VertexNode(int id_) {
+        cout << "VertexNode(int id_)" << endl;
+        id = id_;
+        cout << "leaving VertexNode(int id_)" << endl;
+        //data = T();
+    }
+//    VertexNode(int id, T data) {
+//        this->id = id;
+//        this->data = data;
+//    }
+//    T getData() {
+//        return data;
+//    }
+//    void setData(T data_) {
+//        this->data = data_;
+//    }
+};
+
+template <class T>
+class Edge {
+    double weight{};
+public:
+    VertexNode<T> *source;
+    VertexNode<T> *destination;
+    Edge() {
+        cout << "Edge()" << endl;
+        this->source = nullptr;
+        this->destination = nullptr;
+        this->weight = 0;
+        cout << "leaving Edge()" << endl;
+    }
+    Edge(VertexNode<T> *source, VertexNode<T> *destination, double weight) {
+        cout << "Edge constructor called" << endl;
+        this->source = source;
+        this->destination = destination;
+        this->weight = weight;
+        cout << "leaving Edge constructor" << endl;
+    }
+    double getWeight() {
+        return weight;
+    }
+    void setWeight(double weight_) {
+        this->weight = weight_;
+    }
+
+};
+
+template <class T>
+class Graph {
+    int V{};
+    int E{};
+    bool directed{};
+    bool weighted{};
+    list<VertexNode<T>*> *adjList{};
+    list<Edge<T>*> *edgeList{};
+    void initializeAdjList(int vertices);
+public:
+    Graph();
+    explicit Graph(int V_);
+    Graph(int V_, bool isDirected);
+    Graph(int V_, bool isDirected, bool isWeighted);
+    void addEdge(T v1, T v2, bool isDirected = false, bool isWeighted = false, double weight = 0.0);
+    void printAdjList();
+
+};
+
+template<class T>
+Graph<T>::Graph() {
+    cout << "Default constructor called" << endl;
+    this->V = 0;
+    this->E = 0;
+    this->directed = false;
+    this->weighted = false;
+    this->adjList = NULL;
+    cout << "leaving default constructor" << endl;
+}
+
+template<class T>
+Graph<T>::Graph(int V_) {
+    cout << "Graph(int V_)" << endl;
+    this->V = V_;
+    this->E = 0;
+    this->directed = false;
+    this->weighted = false;
+    initializeAdjList(V_);
+    cout << "leaving Graph(int V_)" << endl;
+}
+
+template<class T>
+Graph<T>::Graph(int V_, bool isDirected) {
+    cout << "Graph(int V_, bool isDirected)" << endl;
+    this->V = V_;
+    this->E = 0;
+    this->directed = isDirected;
+    this->weighted = false;
+    initializeAdjList(V_);
+}
+
+template<class T>
+Graph<T>::Graph(int V_, bool isDirected, bool isWeighted) {
+    cout << "Graph(int V_, bool isDirected, bool isWeighted)" << endl;
+    this->V = V_;
+    this->E = 0;
+    this->directed = isDirected;
+    this->weighted = isWeighted;
+    initializeAdjList(V_);
+}
+
+template<class T>
+void Graph<T>::addEdge(T v1, T v2, bool isDirected, bool isWeighted,
+                       double weight) {
+    cout << "Adding edge between " << v1 << " and " << v2 << endl;
+    auto *v1_node = new VertexNode<T>(v1);
+    auto *v2_node = new VertexNode<T>(v2);
+    auto *edge = new Edge<T>(v1_node, v2_node, weight);
+    if (isDirected) {
+        cout << "Adding directed edge between " << v1 << " and " << v2 << endl;
+        adjList[v1_node->id].push_back(v2_node);
+        edgeList[v1_node->id].push_back(edge);
+        cout << "Added directed edge between " << v1 << " and " << v2 << endl;
+    } else {
+        cout << "Adding undirected edge between " << v1 << " and " << v2 << endl;
+        adjList[v1_node->id].push_back(v2_node);
+        adjList[v2_node->id].push_back(v1_node);
+        edgeList[v1_node->id].push_back(edge);
+        edgeList[v2_node->id].push_back(edge);
+        cout << "Added undirected edge between " << v1 << " and " << v2 << endl;
+    }
+    this->E++;
+    cout << "Edge added" << endl;
+}
+
+template<class T>
+void Graph<T>::printAdjList() {
+    cout << "print Adjacency List: " << endl;
+    for (int i = 0; i < V; i++) {
+        cout << "Vertex " << i << ": ";
+        for (auto &v : adjList[i]) {
+            cout << v->id << " ";
+        }
+        cout << endl;
+    }
+    cout << "end of print Adjacency List" << endl;
+}
+template<class T>
+void Graph<T>::initializeAdjList(int vertices) {
+
+    cout << "initializing adjacency list" << endl;
+    adjList = new list<VertexNode<T>*>[vertices];
+
+    cout << "leaving initializeAdjList" << endl;
+}
+
+
+
+#endif //GRAPH_CPP_GRAPH_H
