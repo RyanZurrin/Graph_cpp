@@ -4,6 +4,7 @@
 #ifndef GRAPH_CPP_GRAPH_H
 #define GRAPH_CPP_GRAPH_H
 #include <bits/stdc++.h>
+#include "UnionFind.h"
 using namespace std;
 // ___________________________begin graph node class____________________________
 /**
@@ -87,9 +88,13 @@ class [[maybe_unused]] Graph {
                                             [[maybe_unused]] bool* recur,
                                             [[maybe_unused]] vector<pair<T,T>>& backEdges);
     [[maybe_unused]] bool isBipartiteUtil(T node, bool* visited, int* color);
+    [[maybe_unused]] int encode(int i, int j, int rows, int cols, bool rowMajor = true);
 
 public:
     [[maybe_unused]] explicit Graph(bool isDirected_ = false);
+    [[maybe_unused]] explicit Graph(vector<vector<T>> grid,
+                                    int numbVertices,
+                                    bool isDirected = false);
     [[maybe_unused]] explicit Graph(int vertices, bool isDirected = false);
     [[maybe_unused]] explicit Graph([[maybe_unused]] vector<T> nodes,
                                     [[maybe_unused]] bool isDirected_ = false);
@@ -111,6 +116,7 @@ public:
     [[maybe_unused]] bool hasCycle();
     [[maybe_unused]] bool cycleFromVertex(T node);
     [[maybe_unused]] bool isBipartite();
+    [[maybe_unused]] bool findEdge(T node1, T node2);
     [[maybe_unused]] [[nodiscard]] bool directed() const;
     [[maybe_unused]] [[nodiscard]] int getV() const;
     [[maybe_unused]] [[nodiscard]] int getE() const;
@@ -134,6 +140,41 @@ template <class T>
 Graph<T>::Graph(bool isDirected_) {
     isDirected = isDirected_;
 } // ____________________________end graph constructor__________________________
+
+template<class T>
+Graph<T>::Graph(vector<vector<T>> grid, int numbVertices, bool isDirected) {
+    // create graph with grid
+    int rows = grid.size();
+    int cols = grid[0].size();
+    this->isDirected = isDirected;
+    // add numVertices vertices to graph
+    for (int i = 0; i <= numbVertices-1; i++) {
+        this->addVertex(i);
+    }
+    // build  arrays dx and dy to store the directions of the 4-connected neighbors
+    int dx[4] = {-1, 0, 1, 0};
+    int dy[4] = {0, 1, 0, -1};
+    // each pos in grid has 4 neighbors to N E S W if in bounds and the weight
+    // is the value at that pos. use the encode to add neighbors to graph and weight
+    // to the value of the pos at the N E S W
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            for (int k = 0; k < 4; k++) {
+                int x = i + dx[k];
+                int y = j + dy[k];
+                int encodedIJ = encode(i, j, rows, cols);
+                int encodedXY = encode(x, y, rows, cols);
+                if (x >= 0 && x < rows && y >= 0 && y < cols) {
+                    // use findEdge to make sure we don't add a duplicate edge
+                    if (!findEdge(encodedIJ, encodedXY)) {
+                        this->addEdge(encodedIJ, encodedXY, grid[x][y]);
+                    }
+                }
+            }
+        }
+    }
+}
+
 /**
  * @brief Graph constructor with number of vertices which will be set from
  *  zero to number of vertices - 1
@@ -461,7 +502,25 @@ bool Graph<T>::isBipartite() {
     }
     return true;
 } // _____________________________end isBipartite_______________________________
-
+/**
+ * @brief determines if an edge exists between two nodes
+ * @param node1  : first node
+ * @param node2  : second node
+ * @return  : true if an edge exists, false otherwise
+ */
+template<class T>
+bool Graph<T>::findEdge(T node1, T node2) {
+    if (nodes.find(node1) == nodes.end() || nodes.find(node2) == nodes.end()) {
+        throw invalid_argument("Node does not exist");
+    }
+    // iterate over the neighbors of node1
+    for ([[maybe_unused]] auto neighbor : nodes[node1]->neighbors) {
+        if (neighbor.first == node2) {
+            return true;
+        }
+    }
+    return false;
+} // _____________________________end findEdge__________________________________
 /**
  * @brief returns the isDirected property of the graph
  * @return  : true if the graph is directed, false otherwise
@@ -534,7 +593,13 @@ T Graph<T>::dijkstra([[maybe_unused]] T src,
                 s.insert({distances[neighbor], neighbor});
             }
         }
-    } // check if the distance is INT_MAX
+    }
+//    // Single source shortest path to all other nodes
+//    for (int i = 0; i < V; ++i) {
+//        cout << "Distance of " << i << " is " << distances[i] << endl;
+//    }
+//    cout  << endl;
+    // check if the distance is INT_MAX
     if (distances[dest] == INT_MAX) {
         return -1;
     }
@@ -1022,6 +1087,18 @@ bool Graph<T>::isBipartiteUtil(T node, bool *visited, int *color) {
     return true;
 }
 
+template<class T>
+int Graph<T>::encode(int i, int j, int rows, int cols, bool rowMajor) {
+    if (rowMajor) {
+        return i * cols + j;
+    } else {
+        return i + j * rows;
+    }
+}
+
+
+
+
 
 // ________________________end cycleFromVertexUtil____________________________
 
@@ -1047,3 +1124,27 @@ static bool contains_cycle(int V,
     }
     return g.hasCycle();
 }
+/**
+ * @brief static function to determine the shortest cost to traverse a graph
+ *      using Dijkstra's algorithm
+ * @param grid  2D grid of integers
+ * @return  integer representing the shortest cost to traverse the graph
+ */
+int shortest_path(vector<vector<int> > grid){
+    //return the shortest path len
+    int n = grid.size();
+    int m = grid[0].size();
+    int size = n * m;
+    Graph graph(grid, size, true);
+    int total = graph.dijkstra(0, size - 1) + grid[0][0];
+    return total;
+}
+/**
+ * @brief static function to determine the biggest island in a graph. GIven a
+ * two dimensional grid, containing only 0's and 1's. Each 1 represents land and
+ * 0 represents water. The adjacent 1's form an island. Each land piece (x,y) is
+ * connected to it's 4 neighbours (N,S,E,W). This function should return the
+ * size of the largest island in the grid and 0 if there are no islands.
+ * @param grid
+ * @return
+ */

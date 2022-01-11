@@ -4,7 +4,79 @@
 
 int main() {
 
-    vector<pair<int, int>> edges{
+    // build a grid of islands from random  0's and 1's that is 15x15
+    vector<vector<int>> grid = {
+            {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0},
+            {0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0},
+            {0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
+            {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1},
+            {1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0},
+            {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+            {0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0},
+            {0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+            {1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1},
+            {0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0}
+    };
+    cout << "largest island is " <<largest_island(grid, 1) << endl;
+
+
+    return 0;
+}
+
+/*
+ Graph<int> graph;
+    graph.addVertex(0);
+    graph.addVertex(1);
+    graph.addVertex(2);
+    graph.addVertex(3);
+    graph.addVertex(4);
+    graph.addVertex(5);
+    graph.addVertex(6);
+
+    graph.addEdge(0, 1, true);
+    graph.addEdge(1, 2, true);
+    graph.addEdge(2, 3, true);
+    graph.addEdge(3, 5, true);
+    graph.addEdge(5, 6, true);
+    graph.addEdge(4, 5, true);
+    graph.addEdge(0, 4, true);
+    graph.addEdge(3, 4, true);
+
+    graph.print();
+    graph.bfs(1);
+    cout << endl;
+
+    vector<vector<int>> shortestPaths = graph.shortestPaths(1, true);
+    vector<int> shortestPath = graph.shortestPath(1, 6, true);
+    cout << "Shortest Paths: " << endl;
+
+    // shortest path from 1 to 4
+
+    vector<pair<int, int>> snakes{
+            {34, 12},
+            {32, 30},
+            {24, 16},
+            {20, 6},
+            {17, 4}
+    };
+    vector<pair<int, int>> ladders{
+            {2, 15},
+            {5, 7},
+            {9, 27},
+            {18, 29},
+            {25, 35}
+    };
+    int N = 36;
+    int minDiceThrows = min_dice_throws(N, snakes, ladders);
+    cout << "\nMinimum number of dice throws required to reach the end of the board is " << minDiceThrows << endl;
+_________________________________________________________________________________________
+
+     vector<pair<int, int>> edges{
             {0,  1},
             {1,  2},
             {0,  4},
@@ -105,58 +177,6 @@ int main() {
 
     // determine if the graph is bipartite
     cout << "\nIs graph bipartite? " << graph.isBipartite() << endl;
-
-
-    return 0;
-}
-
-/*
- Graph<int> graph;
-    graph.addVertex(0);
-    graph.addVertex(1);
-    graph.addVertex(2);
-    graph.addVertex(3);
-    graph.addVertex(4);
-    graph.addVertex(5);
-    graph.addVertex(6);
-
-    graph.addEdge(0, 1, true);
-    graph.addEdge(1, 2, true);
-    graph.addEdge(2, 3, true);
-    graph.addEdge(3, 5, true);
-    graph.addEdge(5, 6, true);
-    graph.addEdge(4, 5, true);
-    graph.addEdge(0, 4, true);
-    graph.addEdge(3, 4, true);
-
-    graph.print();
-    graph.bfs(1);
-    cout << endl;
-
-    vector<vector<int>> shortestPaths = graph.shortestPaths(1, true);
-    vector<int> shortestPath = graph.shortestPath(1, 6, true);
-    cout << "Shortest Paths: " << endl;
-
-    // shortest path from 1 to 4
-
-    vector<pair<int, int>> snakes{
-            {34, 12},
-            {32, 30},
-            {24, 16},
-            {20, 6},
-            {17, 4}
-    };
-    vector<pair<int, int>> ladders{
-            {2, 15},
-            {5, 7},
-            {9, 27},
-            {18, 29},
-            {25, 35}
-    };
-    int N = 36;
-    int minDiceThrows = min_dice_throws(N, snakes, ladders);
-    cout << "\nMinimum number of dice throws required to reach the end of the board is " << minDiceThrows << endl;
-
 
 
  */
