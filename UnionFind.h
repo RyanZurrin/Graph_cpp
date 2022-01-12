@@ -174,7 +174,17 @@ void UnionFind<T>::unionNeighbors(vector<vector<int>> grid,
         }
     }
 }
-int largest_island(vector<vector<int> > grid, int islValue) {
+
+/**
+ * @brief static function to determine the biggest island in a graph. GIven a
+ * two dimensional grid, containing only 0's and 1's. Each 1 represents land and
+ * 0 represents water. The adjacent 1's form an island. Each land piece (x,y) is
+ * connected to it's 4 neighbours (N,S,E,W). This function should return the
+ * size of the largest island in the grid and 0 if there are no islands.
+ * @param grid the grid
+ * @return the size of the largest island
+ */
+static int largest_island(vector<vector<int> > grid, int islValue)  {
     // return the size of the largest island using a union find data structure to
     // store the connected components
     int n = grid.size();
@@ -206,4 +216,6 @@ int largest_island(vector<vector<int> > grid, int islValue) {
     return uf.getLargestComponentSize();
 }
 
+
 #endif //GRAPH_CPP_UNIONFIND_H
+

@@ -1,182 +1,69 @@
 #include "Graph.h"
-#include "BoardGame.h"
 
 
 int main() {
+    Graph<int> graph(13);
 
-    // build a grid of islands from random  0's and 1's that is 15x15
-    vector<vector<int>> grid = {
-            {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0},
-            {0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0},
-            {0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1},
-            {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1},
-            {1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0},
-            {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-            {0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0},
-            {0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0},
-            {1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1},
-            {0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0}
-    };
-    cout << "largest island is " <<largest_island(grid, 1) << endl;
+
+    graph.addEdge(0, 5);
+    graph.addEdge(4, 3);
+    graph.addEdge(0, 1);
+    graph.addEdge(9, 12);
+    graph.addEdge(6, 4);
+    graph.addEdge(5, 4);
+    graph.addEdge(0, 2);
+    graph.addEdge(11, 12);
+    graph.addEdge(9, 10);
+    graph.addEdge(0, 6);
+    graph.addEdge(7, 8);
+    graph.addEdge(9, 11);
+    graph.addEdge(5, 3);
+    graph.addEdge(6, 10);
+    graph.addEdge(3, 7);
+
+//    graph.print();
+//    graph.printAllGraphData();
+//    cout << endl;
+//    cout << "BFS: " << endl;
+//    graph.bfs(2);
+//    cout << endl;
+//    cout << "DFS:" << endl;
+//    graph.dfs(3);
+//    cout << endl;
+//    vector<vector<int>> shortestPaths = graph.shortestPaths(0);
+//    cout << "Shortest paths from 0: " << endl;
+//    for (int i = 0; i < shortestPaths.size(); i++) {
+//        cout << "From 0 to " << i << ": ";
+//        for (int j = 0; j < shortestPaths[i].size(); j++) {
+//            cout << shortestPaths[i][j] << " ";
+//        }
+//        cout << endl;
+//    }
+//    vector<int> shortestPath = graph.shortestPath(0, 12,true);
+//    cout << "Shortest path from 0 to 12: ";
+//    for (int i = 0; i < shortestPath.size(); i++) {
+//        cout << shortestPath[i] << " ";
+//    }
+//    // does graph have cycle?
+//    cout << "Does graph have cycle? \n" << graph.hasCycle() << endl;
+//
+//    // check if graph is connected
+//    cout << "Is graph connected? \n" << graph.isConnected() << endl;
+//    // check how many components are in graph
+//    cout << "How many components are in graph? \n" << graph.getNumberOfComponents() << endl;
+//    // save all the nodes of each component in a vector of vectors
+//    vector<vector<int>> components = graph.getComponents();
+//    for (int i = 0; i < components.size(); i++) {
+//        cout << "Component " << i << ": ";
+//        for (int j = 0; j < components[i].size(); j++) {
+//            cout << components[i][j] << " ";
+//        }
+//        cout << endl;
+//    }
+
+    graph.iteratorTest();
+
 
 
     return 0;
 }
-
-/*
- Graph<int> graph;
-    graph.addVertex(0);
-    graph.addVertex(1);
-    graph.addVertex(2);
-    graph.addVertex(3);
-    graph.addVertex(4);
-    graph.addVertex(5);
-    graph.addVertex(6);
-
-    graph.addEdge(0, 1, true);
-    graph.addEdge(1, 2, true);
-    graph.addEdge(2, 3, true);
-    graph.addEdge(3, 5, true);
-    graph.addEdge(5, 6, true);
-    graph.addEdge(4, 5, true);
-    graph.addEdge(0, 4, true);
-    graph.addEdge(3, 4, true);
-
-    graph.print();
-    graph.bfs(1);
-    cout << endl;
-
-    vector<vector<int>> shortestPaths = graph.shortestPaths(1, true);
-    vector<int> shortestPath = graph.shortestPath(1, 6, true);
-    cout << "Shortest Paths: " << endl;
-
-    // shortest path from 1 to 4
-
-    vector<pair<int, int>> snakes{
-            {34, 12},
-            {32, 30},
-            {24, 16},
-            {20, 6},
-            {17, 4}
-    };
-    vector<pair<int, int>> ladders{
-            {2, 15},
-            {5, 7},
-            {9, 27},
-            {18, 29},
-            {25, 35}
-    };
-    int N = 36;
-    int minDiceThrows = min_dice_throws(N, snakes, ladders);
-    cout << "\nMinimum number of dice throws required to reach the end of the board is " << minDiceThrows << endl;
-_________________________________________________________________________________________
-
-     vector<pair<int, int>> edges{
-            {0,  1},
-            {1,  2},
-            {0,  4},
-            {3,  6},
-            {3,  4},
-            {4,  5},
-            {5,  3},
-            {5,  6}
-    };
-    bool cycle = contains_cycle(7, edges);
-    cout << "Cycle: " << cycle << endl;
-
-    // check if the graph is connected
-
-    Graph<int> graph;
-    graph.addVertex(0);
-    graph.addVertex(1);
-    graph.addVertex(2);
-    graph.addVertex(3);
-    graph.addVertex(4);
-    graph.addVertex(5);
-    //graph.addVertex(6);
-
-    graph.addEdge(0, 1, 1);
-    graph.addEdge(1, 5, 1);
-    graph.addEdge(2, 5, 4);
-    //graph.addEdge(3, 4, 1);
-    //graph.addEdge(2, 3, 9);
-    graph.addEdge(2, 0, 6);
-    //graph.addEdge(0, 3, 7);
-    //graph.addEdge(3, 2, 2);
-    graph.addEdge(3, 4, 3);
-    //graph.addEdge(4, 5, 10);
-    // graph.addEdge(0, 4, 8);
-    //graph.addEdge(3, 6, 5);
-
-    graph.print();
-    graph.printAllGraphData();
-    cout << endl;
-    cout << "BFS: " << endl;
-    graph.bfs(0);
-    cout << endl;
-    cout << "DFS:" << endl;
-    graph.dfs(0);
-    cout << endl;
-    vector<vector<int>> shortestPaths = graph.shortestPaths(0, true);
-    vector<int> shortestPath = graph.shortestPath(1, 4,true);
-    // does graph have cycle?
-    cout << "Does graph have cycle? \n" << graph.hasCycle() << endl;
-
-    // check if graph is connected
-    cout << "Is graph connected? \n" << graph.isConnected() << endl;
-    vector<pair<int, int>> backedges;
-    graph.findBackEdges(backedges);
-    cout << "Back edges: " << endl;
-    for (auto edge : backedges) {
-        cout << edge.first << " " << edge.second << endl;
-    }
-
-    // check each node to see if there is a cycle in it
-    for (int i = 0; i < graph.getV(); i++) {
-        cout << "Does node " << i << " have a cycle? \n" <<
-             graph.cycleFromVertex(i) << endl;
-    }
-    // check the weights between each pair of vertices
-    for (int i = 0; i < graph.getV(); i++) {
-        for (int j = 0; j < graph.getV(); j++) {
-            if(graph.getWeight(i, j) != -1) {
-                cout << "Weight between " << i << " and " << j << " is "
-                     << graph.getWeight(i, j) << endl;
-            }
-
-        }
-    }
-    // print all the ids of all the vertices
-    cout << "All the ids of all the vertices: " << endl;
-    for (int i = 0; i < graph.getV(); i++) {
-        cout << "id of node "<< i << " is " << graph.getId(i) << endl;
-    }
-
-    cout<< "\ndijkstras: \n";
-    vector<pair<int,int>> path = graph.dijkstra(0, 4, true);
-    cout << "\npath: " << endl;
-    for (auto & i : path) {
-        cout << i.first << " " << i.second << endl;
-    }
-    // dijkstra
-    cout << "\nDijkstra: " << graph.dijkstra(0, 4) << endl;
-    unordered_map<int, GraphNode<int>*> nodes = graph.getNodes();
-    for (auto node : nodes) {
-        cout << "node id: " << node.first << endl;
-        cout << "node data: " << node.second->data << endl;
-        cout << "node edges: " << endl;
-        for (auto edge : node.second->neighbors) {
-            cout << edge.first << " " << edge.second << endl;
-        }
-    }
-
-    // determine if the graph is bipartite
-    cout << "\nIs graph bipartite? " << graph.isBipartite() << endl;
-
-
- */

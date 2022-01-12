@@ -174,3 +174,20 @@ void Graph<T>::initializeAdjList(int vertices) {
 
 
 #endif //GRAPH_CPP_GRAPH_H
+template<class T>
+vector<vector<T>> Graph<T>::getComponents() {
+    vector<vector<T>> components;
+    bool *visited = new bool[V];
+    for ([[maybe_unused]] int i = 0; i < V; i++) {
+        visited[i] = false;
+    }
+    for ([[maybe_unused]] auto node : nodes) {
+        if (!visited[node.first]) {
+            vector<T> component;
+            dfs(node.first, visited, component);
+            components.push_back(component);
+        }
+    }
+    delete[] visited;
+    return components;
+}
