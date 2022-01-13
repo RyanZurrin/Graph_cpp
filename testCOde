@@ -169,7 +169,50 @@ _____________________________________________________________________
     };
     cout << "largest island is " <<largest_island(grid, 1) << endl;
 
-
+//    pair<int, string> p1(1, "A");
+//    pair<int, string> p2(2, "B");
+//    pair<int, string> p3(3, "C");
+//    pair<int, string> p4(4, "D");
+//    pair<int, string> p5(5, "E");
+//    pair<int, string> p6(6, "F");
+//    pair<int, string> p7(7, "G");
+//    pair<int, string> p8(8, "H");
+//    pair<int, string> p9(9, "I");
+//    pair<int, string> p10(10, "J");
+//
+//
+//    Graph<string> graph;
+//    graph.addVertex(p1);
+//    graph.addVertex(p2);
+//    graph.addVertex(p3);
+//    graph.addVertex(p4);
+//    graph.addVertex(p5);
+//    graph.addVertex(p6);
+//    graph.addVertex(p7);
+//    graph.addVertex(p8);
+//    graph.addVertex(p9);
+//    graph.addVertex(p10);
+//
+//
+//    graph.addEdge(p1, p2, 2.5);
+//    graph.addEdge(p7, p3, 1.0);
+//    graph.addEdge(p2, p3, 1.0);
+//    graph.addEdge(p3, p4, 1.0);
+//    graph.addEdge(p4, p5, 1.0);
+//    graph.addEdge(p5, p6, 1.0);
+//    graph.addEdge(p6, p7, 1.0);
+//    graph.addEdge(p7, p8, 1.0);
+//    graph.addEdge(p8, p9, 1.0);
+//    graph.addEdge(p9, p10, 1.0);
+//    graph.addEdge(p10, p1, 1.0);
+//    graph.addEdge(p4, p7, 1.0);
+//    graph.addEdge(p8, p1, 1.0);
+//    graph.addEdge(p8, p9, 1.0);
+//    graph.addEdge(p6, p2, 1.0);
+//    graph.addEdge(p10, p1, 1.0);
+//
+//
+//    graph.printNodeData();
 
     Graph<int> graph(13, true);
 //    graph.addEdge(0, 2, 1);
@@ -211,6 +254,8 @@ _____________________________________________________________________
     graph.addEdge(10, 11, 10);
     graph.addEdge(11, 1, 11);
     graph.addEdge(4,11, 6);
+    graph.addEdge(4,12, 7);
+    graph.addEdge(4,2, 8);
 
     graph.print();
     graph.printAllGraphData();
@@ -230,7 +275,7 @@ _____________________________________________________________________
         }
         cout << endl;
     }
-    vector<int> shortestPath = graph.shortestPath(0, 2,true);
+    vector<int> shortestPath = graph.shortestPath(0, 12,true);
     cout << "Shortest path from 0 to 12: ";
     for (int i = 0; i < shortestPath.size(); i++) {
         cout << shortestPath[i] << " ";
@@ -278,13 +323,13 @@ _____________________________________________________________________
     cout << testnode->getData() << endl;
     // test djikstra
     cout << "Testing djikstra" << endl;
-    vector<pair<int, int>> shortestPaths2 = graph.dijkstra(0, 3, true);
+    vector<pair<int, int>> shortestPaths2 = graph.dijkstra(0, 12, true);
     for (int i = 0; i < shortestPaths2.size(); i++) {
         cout << "From 0 to " << i << ": " << shortestPaths2[i].first << " " <<
-        shortestPaths2[i].second << endl;
+             shortestPaths2[i].second << endl;
     }
-    int shortestPath2 = graph.dijkstra(1, 3);
-    cout << "Shortest path from 0 to 12: " << shortestPath2 << endl;
+    double shortestPath2 = graph.dijkstra(1, 12);
+    cout << "Shortest path from 1to 12: " << shortestPath2 << endl;
     //checking pathLength between 0 and 7
     cout << "Testing pathLength between 0 and 7" << endl;
     cout << graph.pathLength(0, 7) << endl;
@@ -314,9 +359,31 @@ _____________________________________________________________________
         }
         cout << endl;
     }
+    // set the data in each node to 2+its index
+    cout << "Testing setData" << endl;
+    for (int i = 0; i < graph.getV(); ++i) {
+        graph.setData(2 + i, i);
+    }
+
+    // set all the weights to 5
+    cout << "Testing setWeight" << endl;
+    for (int i = 0; i <= graph.getV(); ++i) {
+        for (int j = 0; j <= graph.getV(); ++j) {
+            graph.setWeight(i, j, (5.0+i)/(j+1.0));
+        }
+    }
+
+    graph.printNodeData();
     graph.printAllGraphData();
-
-
+    // dijkstra
+    cout << "Testing dijkstra" << endl;
+    double sp2 = graph.dijkstra(1, 12);
+    cout << "Shortest path from 1to 12: " << sp2 << endl;
+    vector<pair<int, int>> sp = graph.dijkstra(0, 3, true);
+    for (int i = 0; i < sp.size(); i++) {
+        cout << "From 0 to " << i << ": " << sp[i].first << " " <<
+             sp[i].second << endl;
+    }
 
 
 
