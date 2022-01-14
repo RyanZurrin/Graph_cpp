@@ -400,8 +400,56 @@ _____________________________________________________________________
         int lp = longestPathSequence(longestPath);
         cout << "Longest path: " << lp << endl;
 
+    Bag<int> b;
+    cout << "Bag b is empty: " << b.isEmpty() << endl;
+    b.add(1);
+    b.add(2);
+    b.add(3);
+    b.add(4);
+    b.add(5);
+    b.add(6);
 
+    cout << b << endl;
+    // test the size
+    cout << "Size: " << b.size() << endl;
+    // test the isEmpty
+    cout << "Is empty: " << b.isEmpty() << endl;
+    // test the contains
+    cout << "Contains 1: " << b.contains(1) << endl;
+    cout << "Contains 7: " << b.contains(7) << endl;
+    // test the remove
+    b.remove(1);
+    cout << b << endl;
+    // test the [] operator
+    cout << "b[0]: " << b[0] << endl;
+    cout << "b[1]: " << b[1] << endl;
+    cout << "b[2]: " << b[2] << endl;
+    cout << "b[3]: " << b[3] << endl;
+    cout << "b[4]: " << b[4] << endl;
+    // test the iterator
+    cout << "Bag b iterator: " << endl;
+    for (Bag<int>::Iterator it = b.begin(); it != b.end(); it++) {
+        cout << *it << " ";
+    }
+    cout << endl;
+    // test the clear
+    b.clear();
+    cout << "Bag b after clear: " << endl;
+    cout << b << endl;
+    Flow_Edge e = Flow_Edge(1, 2, 5.4);
+    cout << e.from() << " " << e.to() << " " << e.capacity() << endl;
+    cout << e << endl;
+    Flow_Edge e2 = Flow_Edge(2, 1, 4.4);
+    // compare two edges
+    cout << (e == e2) << endl;
+    cout << (e != e2) << endl;
+    cout << (e < e2) << endl;
+    cout << (e > e2) << endl;
+    cout << (e <= e2) << endl;
+    cout << (e >= e2) << endl;
 
+    Flow_Network G(1000, 10000);
+    cout << G << endl;
 
 
  */

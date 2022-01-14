@@ -1,8 +1,10 @@
 #ifndef GRAPH_CPP_MAXFLOWGRAPH_H
 #define GRAPH_CPP_MAXFLOWGRAPH_H
 #include <bits/stdc++.h>
+#include "Bag.h"
+#define DEBUG 0
 using namespace std;
-#define FLOATING_POINT_EPSILON 1e-11
+#define FLOATING_POINT_EPSILON 1e-10
     /**
      *  The FlowEdge class represents a capacitated edge with a
       * flow in a FlowNetwork. Each edge consists of two integers
@@ -24,7 +26,8 @@ using namespace std;
         int v{}; // edge source
         int w{}; // edge target
         double capacity{}; // capacity of edge
-        double flow{}; // current flow
+        double flow{};
+        // current flow
     public:
         FlowEdge(int v, int w, const double capacity);
         FlowEdge(int v, int w, const double capacity, const double flow);
@@ -42,6 +45,8 @@ using namespace std;
         void addResidualFlowTo(int vertex, double delta);
         string toString() const;
         friend ostream &operator<<(ostream &os, const FlowEdge &e);
+        ~FlowEdge() = default;
+
     };
     /**
      * @brief Initializes an edge from vertex v to vertex w with
@@ -146,6 +151,9 @@ using namespace std;
      * @throws IllegalArgumentException if {@code vertex} is not one of the endpoints of the edge
      */
     double FlowEdge::residualCapacityTo(int vertex) const {
+        if (DEBUG) cout << "residualCapacityTo" << endl;
+        if (DEBUG) cout << "v " << v << " w " << w << " vertex " << vertex << endl;
+        if (DEBUG) cout << "capacity " << capacity << " flow " << flow << endl;
         if (vertex == v) return flow;
         else if (vertex == w) return capacity - flow;
         else throw runtime_error("invalid vertex");
@@ -164,8 +172,12 @@ using namespace std;
      */
     void FlowEdge::addResidualFlowTo(int vertex, double delta) {
         if (!(delta >= 0.0)) throw std::invalid_argument("delta < 0");
+        if (DEBUG) cout << "addResidualFlowTo" << endl;
+        if (DEBUG) cout << "delata " << delta << " vertex " << vertex << endl;
         if (vertex == v) flow -= delta;
+        if (DEBUG) cout << "flow after -= delta " << flow << endl;
         else if (vertex == w) flow += delta;
+        if (DEBUG) cout << "flow after += delta " << flow << endl;
         else throw runtime_error("invalid vertex");
         // round flow to 0 or capacity if within floating point error
         if (abs(flow) <= FLOATING_POINT_EPSILON) flow = 0.0;
@@ -212,7 +224,7 @@ using namespace std;
     private:
         int V{}; // number of vertices
         int E{}; // number of edges
-        std::vector<std::vector<FlowEdge>> adj; // adjacency list
+        // adjacency list
     public:
         FlowNetwork(int V);
         FlowNetwork(int V, int E);
@@ -226,10 +238,36 @@ using namespace std;
         int getV() const;
         int getE() const;
         void validateVertex(int v) const;
-        std::vector<FlowEdge> getAdj(int v) const;
-        std::vector<FlowEdge> getEdges() const;
+        Bag<FlowEdge *> * getAdj(int v) const;
+        Bag<FlowEdge*>* getEdges() const ;
         string toString() const;
         friend ostream &operator<<(ostream &os, const FlowNetwork &g);
+        // overload the [] operator to return the Bag of edges
+        // incident from a given vertex
+        Bag<FlowEdge*>* operator[](int v)  {
+            validateVertex(v);
+            return this->getAdj(v);
+        }
+        // overload the () operator to return the Bag of edges
+        // incident from a given vertex
+        Bag<FlowEdge*>* operator()(int v)  {
+            validateVertex(v);
+            return this->getAdj(v);
+        }
+
+        Bag<FlowEdge*>* adj;
+        FlowEdge getEdge(int i, int j) const;
+
+        ~FlowNetwork() {
+            if (DEBUG) cout << "destructor called" << endl;
+            // iterate over all edges and delete them
+            for (int v = 0; v < V; v++) {
+                for (Bag<FlowEdge *>::Iterator it = adj[v].begin(); it != adj[v].end(); it++) {
+                    delete *it;
+                }
+            }
+            delete[] adj;
+        }
     };
     /**
      * @brief Initializes an empty flow network with V vertices and 0 edges.
@@ -239,10 +277,9 @@ using namespace std;
     FlowNetwork::FlowNetwork(int V) : V(V) {
         if (V < 0)
             throw runtime_error("number of vertices must be nonnegative");
-        adj.resize(V);
-        this->E = 0;
+        adj = new Bag<FlowEdge*>[V];
         for (int v = 0; v < V; v++) {
-            adj[v] = std::vector<FlowEdge>();
+            adj[v] = Bag<FlowEdge*>();
         }
     }
     /**
@@ -250,26 +287,33 @@ using namespace std;
      * The capacities are integers between 0 and 99 and the flow values are zero.
      * @param V the number of vertices
      * @param E the number of edges
-     * @throws IllegalArgumentException if {@code V < 0}
-     * @throws IllegalArgumentException if {@code E < 0}
+     * @throws IllegalArgumentException if {V < 0}
+     * @throws IllegalArgumentException if {E < 0}
      */
     FlowNetwork::FlowNetwork(int V, int E) : V(V) {
+        if(DEBUG) cout << "FlowNetwork::FlowNetwork(int V, int E)" << endl;
         if (V < 0)
             throw runtime_error("number of vertices must be nonnegative");
         if (E < 0) throw runtime_error("number of edges must be nonnegative");
         this->E = E;
-        adj.resize(V);
+        if (DEBUG) cout << "V: " << V << " E: " << E << endl;
+        adj = new Bag<FlowEdge*>[V];
         for (int v = 0; v < V; v++) {
-            adj[v] = std::vector<FlowEdge>();
+            if (DEBUG) cout << "v: " << v << endl;
+            adj[v] = Bag<FlowEdge*>();
         }
+        if (DEBUG) cout << "adj: " << adj << endl;
         // add random edges using the seeded random number generator
         srand(time(NULL));
         for (int i = 0; i < E; i++) {
+            if (DEBUG) cout << "i: " << i << endl;
             int v = rand() % V;
             int w = rand() % V;
             int capacity = rand() % 100;
+            if (DEBUG) cout << "v: " << v << " w: " << w << " capacity: " << capacity << endl;
             addEdge(FlowEdge(v, w, capacity));
         }
+        if (DEBUG) cout << "end of constructor and adj: " << adj << endl;
     }
     FlowNetwork::FlowNetwork(const FlowNetwork &network) :
     V(network.V), E(network.E), adj(network.adj) {}
@@ -302,9 +346,9 @@ using namespace std;
     FlowNetwork::FlowNetwork(int V, istream &in) : V(V), E(0) {
         if (V < 0)
             throw runtime_error("number of vertices must be nonnegative");
-        adj.resize(V);
+        adj = new Bag<FlowEdge*>[V];
         for (int v = 0; v < V; v++) {
-            adj[v] = std::vector<FlowEdge>();
+            adj[v] = Bag<FlowEdge*>();
         }
         in >> E;
         if (E < 0) throw runtime_error("number of edges must be nonnegative");
@@ -315,6 +359,7 @@ using namespace std;
             validateVertex(v);
             validateVertex(w);
             addEdge(FlowEdge(v, w, capacity));
+            if (DEBUG) cout << "v: " << v << " w: " << w << " capacity: " << capacity << endl;
         }
     }
     /**
@@ -324,13 +369,15 @@ using namespace std;
      *         0 and V-1
      */
     void FlowNetwork::addEdge(const FlowEdge &e) {
+        if (DEBUG) cout << "FlowNetwork::addEdge(const FlowEdge &e)" << endl;
         int v = e.from();
         int w = e.to();
         validateVertex(v);
         validateVertex(w);
-        adj[v].push_back(e);
-        adj[w].push_back(e);
+        adj[v].add(new FlowEdge(e));
+        adj[w].add(new FlowEdge(e));
         E++;
+        if (DEBUG) cout << "end of addEdge and E: " << E << endl;
     }
 
     /**
@@ -355,6 +402,7 @@ using namespace std;
      * @param v the vertex
      */
     void FlowNetwork::validateVertex(int v) const {
+        if (DEBUG) cout << "FlowNetwork::validateVertex(int v)" << endl;
         if (v < 0 || v >= V)
             throw runtime_error("vertex " + to_string(v) +
                                 " is not between 0 and " + to_string(V - 1));
@@ -367,28 +415,27 @@ using namespace std;
      * @return the edges incident on vertex v as an Iterable
      * @throws IllegalArgumentException unless 0 <= v < V
      */
-    std::vector<FlowEdge> FlowNetwork::getAdj(int v) const {
+    Bag<FlowEdge *> * FlowNetwork::getAdj(int v) const {
+        if (DEBUG) cout << "FlowNetwork::getAdj(int v)" << endl;
         validateVertex(v);
-        return adj[v];
+        return &adj[v];
     }
 
     /**
      * @brief return list of all edges - excludes self loops
      */
-    std::vector<FlowEdge> FlowNetwork::getEdges() const {
-        std::vector<FlowEdge> list;
+    Bag<FlowEdge*>* FlowNetwork::getEdges() const {
+        if (DEBUG) cout << "FlowNetwork::getEdges()" << endl;
+        Bag<FlowEdge*>* edges = new Bag<FlowEdge*>();
         for (int v = 0; v < V; v++) {
-            int selfLoops = 0;
-            for (FlowEdge e: adj[v]) {
-                if (e.to() != v)
-                    list.push_back(e);
-                else if (e.from() != v)
-                    list.push_back(e);
-                else
-                    selfLoops++;
+            for (FlowEdge* e : *getAdj(v)) {
+                if (e->from() != e->to()) {
+                    edges->add(e);
+                }
             }
         }
-        return list;
+        if (DEBUG) cout << "end of getEdges()" << endl;
+        return edges;
     }
 
     /**
@@ -396,14 +443,17 @@ using namespace std;
      * @return  a string representation of the graph
      */
     string FlowNetwork::toString() const {
+        if (DEBUG) cout << "FlowNetwork::toString()" << endl;
         stringstream ss;
+        ss << "V = " << V << ", E = " << E << endl;
         for (int v = 0; v < V; v++) {
-            ss << v << ": ";
-            for (FlowEdge e: adj[v]) {
-                ss << e << " ";
+            ss << "Adj[" << v << "]: ";
+            for (FlowEdge* e : *getAdj(v)) {
+                ss << e->toString() << "  ";
             }
-            ss << std::endl;
+            ss << endl;
         }
+        if (DEBUG) cout << "end of toString()" << endl;
         return ss.str();
     }
 
@@ -414,96 +464,102 @@ using namespace std;
      * @return  the output stream
      */
     ostream &operator<<(ostream &os, const FlowNetwork &g) {
+        if (DEBUG) cout << "FlowNetwork::operator<<(ostream &os, const FlowNetwork &g)" << endl;
         os << g.toString();
         return os;
     }
 
+    FlowEdge FlowNetwork::getEdge(int i, int j) const {
+        if (DEBUG) cout << "FlowNetwork::getEdge(int i, int j)" << endl;
+        for (FlowEdge* e : *getAdj(i)) {
+            if (e->to() == j) {
+                if (DEBUG) cout << "end of getEdge(int i, int j), returning ";
+                if (DEBUG) cout << "e: " << e->toString() << endl;
+                return *e;
+            }
+        }
+        if (DEBUG) cout << "end of getEdge(int i, int j), returning ";
+        if (DEBUG) cout << "FLOWEDGE(0,0,0)" << endl;
+        return FlowEdge(0, 0, 0);
+    }
 
 
-    /**
-     *  @brief The FordFulkerson class represents a data type for computing a
-     *  maximum st-flow and minimum st-cut in a flow network.
-     *  <p>
-     *  This implementation uses the <em>Ford-Fulkerson</em> algorithm with
-     *  the <em>shortest augmenting path</em> heuristic.
-     *  The constructor takes <em>O</em>(<em>E V</em> (<em>E</em> + <em>V</em>))
-     *  time, where <em>V</em> is the number of vertices and <em>E</em> is
-     *  the number of edges. In practice, the algorithm will run much faster.
-     *  The inCut() and value() methods take &Theta(1) time.
-     *  It uses &Theta(V) extra space (not including the network).
-     *  <p>
-     *  This correctly computes the maxflow and mincut if all arithmetic
-     *  performed is without floating-point rounding error or arithmetic
-     *  overflow. This is guaranteed to be the case if all edge capacities
-     *  and initial flow values are integers and the value of the maxflow
-     *  does not exceeds 2<sup>52</sup>.
-     *  <p>
-     *  For additional documentation, see
-     *  <a href="https://algs4.cs.princeton.edu/64maxflow">Section 6.4</a> of
-     *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
-     *
-     *  @author Robert Sedgewick
-     *  @author Kevin Wayne
-     *  @author re-implemented in C++ by Ryan Zurrin
-     */
+/**
+ *  @brief The FordFulkerson class represents a data type for computing a
+ *  maximum st-flow and minimum st-cut in a flow network.
+ *  <p>
+ *  This implementation uses the <em>Ford-Fulkerson</em> algorithm with
+ *  the <em>shortest augmenting path</em> heuristic.
+ *  The constructor takes <em>O</em>(<em>E V</em> (<em>E</em> + <em>V</em>))
+ *  time, where <em>V</em> is the number of vertices and <em>E</em> is
+ *  the number of edges. In practice, the algorithm will run much faster.
+ *  The inCut() and value() methods take &Theta(1) time.
+ *  It uses &Theta(V) extra space (not including the network).
+ *  <p>
+ *  This correctly computes the maxflow and mincut if all arithmetic
+ *  performed is without floating-point rounding error or arithmetic
+ *  overflow. This is guaranteed to be the case if all edge capacities
+ *  and initial flow values are integers and the value of the maxflow
+ *  does not exceeds 2<sup>52</sup>.
+ *  <p>
+ *  For additional documentation, see
+ *  <a href="https://algs4.cs.princeton.edu/64maxflow">Section 6.4</a> of
+ *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
+ *
+ *  @author Robert Sedgewick
+ *  @author Kevin Wayne
+ *  @author re-implemented in C++ by Ryan Zurrin
+ */
     class FordFulkerson {
     private:
         const int V; // number of vertices
-        const FlowNetwork &G;
-        std::vector<double> excess;
-        std::vector<int> height;
-        std::vector<int> active;
-        std::vector<int> current;
-        std::vector<FlowEdge> edgeTo;
-        std::vector<bool> marked;
+        bool* marked;
+        vector<FlowEdge*> edgeTo;
+        const FlowNetwork& G;
         double value;
     public:
-        FordFulkerson(const FlowNetwork &G);
         FordFulkerson(const FlowNetwork &G, int s, int t);
+        double getValue() const;
         bool hasAugmentingPath(int s, int t);
         bool inCut(int v) const;
-        void validateVertex(int v) const;
-        double maxFlow(int s, int t);
-        double getValue() const;
-        std::vector<FlowEdge> getMaxFlow();
-        void bfs(int s);
-        void relabel(int v);
-        void discharge(int v);
-        void push(FlowEdge &e);
-        void gap(int s);
-        double getExcess(int v) const;
-        bool isFeasible(std::vector<FlowEdge> &maxFlow);
         bool isFeasible(int s, int t);
+        void validate(int v) const;
         bool check(int s, int t);
-        void initPreflow(int s);
-        void printMaxFlow() const;
+        double getExcess(int v) const;
         void printGraph() const;
         string toString() const;
         friend ostream &operator<<(ostream &os, const FordFulkerson &ff);
+        // add iterator to iterate over edges
+        class iterator {
+        private:
+            const FordFulkerson& ff;
+            int v;
+            int i;
+        public:
+            iterator(const FordFulkerson& ff, int v, int i) : ff(ff), v(v), i(i) {}
+            FlowEdge operator*() const { return ff.G.getEdge(v, i); }
+            iterator& operator++() { i++; return *this; }
+            bool operator!=(const iterator& other) const { return v != other.v || i != other.i; }
+            bool operator==(const iterator& other) const { return v == other.v && i == other.i; }
 
-        void printMinCut();
+        }; // end of iterator class
+        iterator begin(int v) const {
+            return iterator(*this, v, 0);
+        }
+        iterator end(int v) const {
+            return iterator(*this, v, G.getAdj(v)->size());
+        }
+
+        ~FordFulkerson() {
+            for (FlowEdge* e : *G.getEdges()) {
+                delete e;
+            }
+            delete[] marked;
+        }
+
     };
 
-/**
- * @brief Constructor
- * @param G the graph
- */
-    FordFulkerson::FordFulkerson(const FlowNetwork &G) :
-            V(G.getV()), G(G){
-        excess.resize(V);
-        height.resize(V);
-        active.resize(V);
-        current.resize(V);
-        marked.resize(V);
-        for (int v = 0; v < V; v++) {
-            height[v] = 0;
-            active[v] = v;
-            current[v] = 0;
-            marked[v] = false;
-        }
-        value = 0;
-        initPreflow(0);
-    }
+
 
 /**
  * @brief Constructor
@@ -513,32 +569,30 @@ using namespace std;
  */
     FordFulkerson::FordFulkerson(const FlowNetwork &G, int s, int t) :
             V(G.getV()), G(G){
-        excess.resize(V);
-        height.resize(V);
-        active.resize(V);
-        current.resize(V);
-        initPreflow(s);
-        if (s == t) {
-            cout << "s == t" << endl;
-            return;
-        }
-        if (!isFeasible(s, t)) {
-            cout << "Initial flow is infeasible" << endl;
-           // return;
-        }
+        validate(s);
+        validate(t);
+        if (s == t) throw std::invalid_argument("source equals sink");
+        if(!isFeasible(s, t)) throw std::invalid_argument("infeasible");
         value = getExcess(t);
+        if (DEBUG) cout << "end of FordFulkerson constructor" << endl;
+        if (DEBUG) cout << "value: " << value << endl;
         while (hasAugmentingPath(s, t)) {
-            double bottleneck = MAXFLOAT;
-            for (int v = t; v != s; v = edgeTo[v].other(v)) {
-                bottleneck = min(bottleneck, edgeTo[v].residualCapacityTo(v));
+            double bottle = std::numeric_limits<double>::max();
+            if (DEBUG) cout << "bottle: " << bottle << endl;
+            for (int v = t; v != s; v = edgeTo[v]->other(v)) {
+                bottle = std::min(bottle, edgeTo[v]->residualCapacityTo(v));
+                if (DEBUG) cout << "bottle: " << bottle << endl;
             }
             // augment flow
-            for (int v = t; v != s; v = edgeTo[v].other(v)) {
-                edgeTo[v].addResidualFlowTo(v, bottleneck);
+            for (int v = t; v != s; v = edgeTo[v]->other(v)) {
+                if (DEBUG) cout << "adding residualFlowTo: " << edgeTo[v]->residualCapacityTo(v) << endl;
+                edgeTo[v]->addResidualFlowTo(v, bottle);
             }
-            value += bottleneck;
+            value += bottle;
+            if (DEBUG) cout << "value after += bottle: " << value << endl;
         }
-        assert (check(s, t));
+        if (DEBUG) cout << "end of FordFulkerson constructor before assert" << endl;
+        assert(check(s, t));
     }
 
 /**
@@ -549,26 +603,39 @@ using namespace std;
  * @return  true if there is an augmenting path, false otherwise
  */
     bool FordFulkerson::hasAugmentingPath(int s, int t) {
-        validateVertex(s);
-        validateVertex(t);
-        edgeTo = std::vector<FlowEdge>(V, FlowEdge(0, 0, 0));
-        marked = std::vector<bool>(V, false);
+        if (DEBUG) cout << "hasAugmentingPath(" << s << ", " << t << ")" << endl;
+        validate(s);
+        validate(t);
+        marked = new bool[V];
+        edgeTo = vector<FlowEdge*>(V);
+        for (int v = 0; v < V; v++) {
+            marked[v] = false;
+            if (DEBUG) cout << "marked[" << v << "] = " << marked[v] << endl;
+        }
         queue<int> q;
         q.push(s);
         marked[s] = true;
+        if (DEBUG) cout << "marked[" << s << "] = " << marked[s] << endl;
         while (!q.empty()) {
             int v = q.front();
             q.pop();
-            for (FlowEdge e: G.getAdj(v)) {
-                int w = e.other(v);
-                // residual capacity from v to w
-                if (e.residualCapacityTo(w) > 0 && !marked[w]) {
+            if (DEBUG) cout << "v = " << v << endl;
+            for (FlowEdge* e : *G.getAdj(v)) {
+                int w = e->other(v);
+                if (DEBUG) cout << "w = " << w << endl;
+                if (e->residualCapacityTo(w) > 0 && !marked[w]) {
+                    if (DEBUG) cout << "marked[" << w << "] = " << marked[w] << endl;
+                    if (DEBUG) cout << "edgeTo[" << w << "] = " << edgeTo[w] << endl;
                     edgeTo[w] = e;
+                    if (DEBUG) cout << "edgeTo[" << w << "] = " << edgeTo[w] << endl;
                     marked[w] = true;
+                    if (DEBUG) cout << "marked[" << w << "] = " << marked[w] << endl;
                     q.push(w);
+                    if (DEBUG) cout << "q.push(" << w << ")" << endl;
                 }
             }
         }
+        if (DEBUG) cout << "marked[" << t << "] = " << marked[t] << endl;
         return marked[t];
     }
 
@@ -578,8 +645,9 @@ using namespace std;
  * @return  true if vertex v is on the s side of the min-cut
  */
     bool FordFulkerson::inCut(int v) const {
-        validateVertex(v);
-        return height[v] < V;
+        if (DEBUG) cout << "inCut(" << v << ") = " << marked[v] << endl;
+        validate(v);
+        return marked[v];
     }
 
 /**
@@ -587,156 +655,24 @@ using namespace std;
  * @throws IllegalArgumentException unless  0 <= v < V
  * @param v the vertex
  */
-    void FordFulkerson::validateVertex(int v) const {
+    void FordFulkerson::validate(int v) const {
+        if (DEBUG)  cout << "validate(" << v << ")" << endl;
         if (v < 0 || v >= V)
             throw runtime_error("vertex " + to_string(v) +
                                 " is not between 0 and " + to_string(V - 1));
     }
 
-/**
- * @brief finds the maximum flow from s to t
- * @param s  the source vertex
- * @param t  the sink vertex
- * @return  the maximum flow
- */
-    double FordFulkerson::maxFlow(int s, int t) {
-        validateVertex(s);
-        validateVertex(t);
-        if (s == t)
-            return 0.0;
-        initPreflow(s);
-        bfs(s);
-        while (excess[t] > 0) {
-            if (active[t] < 0) {
-                gap(s);
-            }
-            relabel(t);
-            bfs(s);
-        }
-        return value;
-    }
 
 /**
  * @brief gets the value of the max flow
  * @return  the value of the max flow
  */
     double FordFulkerson::getValue() const {
+        if (DEBUG) cout << "FordFulkerson::getValue() is " << value << endl;
         return value;
     }
 
-/**
- * @brief return list of edges in max flow
- * @return  list of edges in max flow
- */
-    std::vector<FlowEdge> FordFulkerson::getMaxFlow() {
-        std::vector<FlowEdge> list;
-        for (int v = 0; v < V; v++) {
-            for (FlowEdge e: G.getAdj(v)) {
-                if (e.residualCapacityTo(v) > 0)
-                    list.push_back(e);
-            }
-        }
-        return list;
-    }
 
-/**
- * @brief breadth-first search from s
- * @param s  the source vertex
- */
-    void FordFulkerson::bfs(int s) {
-        for (int v = 0; v < V; v++) {
-            height[v] = -1;
-            active[v] = -1;
-        }
-        height[s] = 0;
-        active[s] = 0;
-        queue<int> q;
-        q.push(s);
-        while (!q.empty()) {
-            int v = q.front();
-            q.pop();
-            for (FlowEdge e: G.getAdj(v)) {
-                int w = e.to();
-                if (e.residualCapacityTo(w) > 0 && height[w] < 0) {
-                    height[w] = height[v] + 1;
-                    active[w] = v;
-                    q.push(w);
-                }
-            }
-        }
-    }
-
-/**
- * @brief relabel the vertex v
- * @param v the vertex
- */
-    void FordFulkerson::relabel(int v) {
-        int minHeight = V;
-        for (FlowEdge e: G.getAdj(v)) {
-            int w = e.to();
-            if (e.residualCapacityTo(w) > 0) {
-                minHeight = min(minHeight, height[w]);
-            }
-        }
-        height[v] = minHeight + 1;
-    }
-
-/**
- * @brief Discharge a vertex
- * @param v  Vertex to discharge
- */
-    void FordFulkerson::discharge(int v) {
-        for (FlowEdge e: G.getAdj(v)) {
-            int w = e.to();
-            if (e.residualCapacityTo(w) > 0) {
-                if (height[w] > height[v]) {
-                    push(e);
-                    if (excess[v] == 0)
-                        return;
-                }
-            }
-        }
-        gap(v);
-    }
-
-/**
- * @brief pushes flow along edge e
- * @param e edge to push flow along
- */
-    void FordFulkerson::push(FlowEdge &e) {
-        int v = e.from();
-        int w = e.to();
-        double amt = min(excess[v], e.residualCapacityTo(w));
-        e.addResidualFlowTo(w, amt);
-        excess[v] -= amt;
-        excess[w] += amt;
-    }
-
-/**
- * @brief gap relabels all vertices in the gap
- * @param s  - source
- */
-    void FordFulkerson::gap(int s) {
-        while (true) {
-            int v = active[s];
-            if (v < 0)
-                return;
-            int w = current[v];
-            FlowEdge &e = reinterpret_cast<FlowEdge &>(edgeTo[v]);
-            push(e);
-            if (excess[v] == 0) {
-                active[s] = -1;
-                return;
-            } else {
-                w = e.other(w);
-                if (height[w] == height[v] + 1) {
-                    current[v] = w;
-                } else {
-                    active[s] = -1;
-                }
-            }
-        }
-    }
 
 /**
  * @brief return the excess flow at vertex v
@@ -744,29 +680,23 @@ using namespace std;
  * @return  excess flow at vertex v
  */
     double FordFulkerson::getExcess(int v) const {
-        double excess_ = 0.0;
-        for (FlowEdge e: G.getAdj(v)) {
-            if (e.from() == v)
-                excess_ -= e.getFlow();
-            else
-                excess_ += e.getFlow();
+        if (DEBUG) cout << "getExcess(" << v << ")" << endl;
+        validate(v);
+        double excess = 0.0;
+        for (FlowEdge* e : *G.getAdj(v)) {
+            if (e->from() == v) {
+                excess -= e->getFlow();
+                if (DEBUG) cout << "excess -= " << e->getFlow() << endl;
+            } else {
+                excess += e->getFlow();
+                if (DEBUG) cout << "excess += " << e->getFlow() << endl;
+            }
+            if (DEBUG) cout << "excess = " << excess << endl;
         }
-        return excess_;
+        if (DEBUG) cout << "returning excess = " << excess << endl;
+        return excess;
     }
 
-/**
- * @brief check if the the flow is feasible given the current flow values
- * @param maxFlow  the maximum flow value
- * @return true if the flow is feasible
- */
-    bool FordFulkerson::isFeasible(std::vector<FlowEdge> &maxFlow) {
-        for (FlowEdge e: maxFlow) {
-            if (e.getFlow() < -FLOATING_POINT_EPSILON ||
-                e.getFlow() > e.getCapacity() + FLOATING_POINT_EPSILON)
-                return false;
-        }
-        return true;
-    }
 
 /**
  * @brief check if the given graph is a flow network
@@ -775,13 +705,18 @@ using namespace std;
  * @return true if the graph is a flow network, false otherwise
  */
     bool FordFulkerson::isFeasible(int s, int t) {
+        if (DEBUG) {
+            cout << "isFeasible" << endl;
+            cout << "s: " << s << " t: " << t << endl;
+        }
         // check that capacity constraints are satisfied
-        for (FlowEdge e: G.getAdj(s)) {
-            if (e.getFlow() < -FLOATING_POINT_EPSILON ||
-                e.getFlow() > e.getCapacity() + FLOATING_POINT_EPSILON)
+        for (FlowEdge* e: *G.getAdj(s)) {
+            if (e->getFlow() < -FLOATING_POINT_EPSILON ||
+                e->getFlow() > e->getCapacity() + FLOATING_POINT_EPSILON) {
                 std::cout << "Edge does not satisfy capacity constraints: " << e
-                     << std::endl;
-            return false;
+                          << std::endl;
+                return false;
+            }
         }
         // check that net flow into a vertex equals zero, except at source and sink
         if (abs(value + getExcess(s)) > FLOATING_POINT_EPSILON) {
@@ -799,9 +734,12 @@ using namespace std;
             if (v == s || v == t) continue;
             else if (abs(getExcess(v)) > FLOATING_POINT_EPSILON) {
                 std::cout << "Net flow out of " << v << " doesn't equal zero"
-                     << std::endl;
+                          << std::endl;
                 return false;
             }
+        }
+        if (DEBUG) {
+            cout << "isFeasible: true" << endl;
         }
         return true;
     }
@@ -813,6 +751,10 @@ using namespace std;
  * @return   true if optimality conditions are satisfied, false otherwise
  */
     bool FordFulkerson::check(int s, int t) {
+        if (DEBUG) {
+            std::cout << "Checking optimality conditions..." << std::endl;
+            std::cout << "Checking flow through " << s << " to " << t << std::endl;
+        }
         // check that flow is feasible
         if (!isFeasible(s, t)) {
             std::cout << "Flow is infeasible" << std::endl;
@@ -831,49 +773,42 @@ using namespace std;
         // check that value of min cut = value of max flow
         double mincutValue = 0.0;
         for (int v = 0; v < V; v++) {
-            for (FlowEdge e: G.getAdj(v)) {
-                if (e.from() == v) {
-                    if (inCut(e.from()) && inCut(e.to()))
-                        mincutValue += e.getCapacity();
+            for (FlowEdge* e: *G.getAdj(v)) {
+                if (e->from() == v) {
+                    if (inCut(e->from()) && inCut(e->to()))
+                        mincutValue += e->getCapacity();
                 } else {
-                    if (inCut(e.from()) && inCut(e.to()))
-                        mincutValue -= e.getCapacity();
+                    if (inCut(e->from()) && inCut(e->to()))
+                        mincutValue -= e->getCapacity();
                 }
             }
         }
         if (abs(mincutValue - value) > FLOATING_POINT_EPSILON) {
-            std::cout << "Max flow value = " << value << " but min cut value = "
+            std::cout << "Max flow value = " << value << " min cut value = "
                  << mincutValue << std::endl;
             return false;
+        }
+        if (DEBUG) {
+            std::cout << "Checking optimality conditions...OK" << std::endl;
         }
         return true;
     }
 
-
-    void FordFulkerson::initPreflow(int s) {
-        for (int v = 0; v < V; v++) {
-            if (v == s) {
-                current[v] = G.getAdj(v).size();
-            } else {
-                current[v] = 0;
-            }
-        }
-    }
-
     string FordFulkerson::toString() const {
+        if (DEBUG) {
+            std::cout << "FordFulkerson::toString()" << std::endl;
+        }
         stringstream ss;
         // print all the network data to the stringstream
-        ss << "FordFulkerson" << std::endl;
-        ss << "V = " << V << std::endl;
-        ss << "E = " << G.getE() << std::endl;
-        ss << "value = " << getValue() << std::endl;
-        ss << "edges = " << std::endl;
+        ss << "Max flow value = " << value << endl;
+        ss << "Min cut: " << endl;
         for (int v = 0; v < V; v++) {
-            for (FlowEdge e: G.getAdj(v)) {
-                if (e.getFlow() > 0) {
-                    ss << e << std::endl;
-                }
-            }
+            if (inCut(v))
+                ss << v << " ";
+        }
+        ss << endl;
+        if (DEBUG) {
+            std::cout << "FordFulkerson::toString() done" << std::endl;
         }
         return ss.str();
     }
@@ -885,37 +820,19 @@ using namespace std;
  * @return    output stream
  */
     ostream &operator<<(ostream &os, const FordFulkerson &ff) {
+        if (DEBUG) { os << "FordFulkerson::operator<<" << endl; }
+        if (ff.G.getV() == 0) {
+            os << "Empty network" << endl;
+            return os;
+        }
         os << ff.toString();
+        if (DEBUG) { os << "FordFulkerson::operator<< end" << endl; }
         return os;
     }
 
-/**
- * @brief print the network data to the console
- */
-    void FordFulkerson::printMaxFlow() const {
-        std::cout << "Max flow = " << getValue() << std::endl;
-        std::cout << "Edges in max flow = " << std::endl;
-        for (int v = 0; v < V; v++) {
-            for (FlowEdge e: G.getAdj(v)) {
-                if (v == e.from() && e.getFlow() > 0) {
-                    std::cout << " " << e;
-                }
-            }
-        }
-    }
 
     void FordFulkerson::printGraph() const {
         std::cout << G << std::endl;
-    }
-
-    void FordFulkerson::printMinCut() {
-        std::cout << "Min cut = " << std::endl;
-        for (int v = 0; v < V; v++) {
-            if (inCut(v)) {
-                std::cout << v << " ";
-            }
-        }
-        std::cout << std::endl;
     }
 
 #endif //GRAPH_CPP_MAXFLOWGRAPH_H

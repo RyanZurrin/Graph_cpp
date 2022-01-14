@@ -2069,7 +2069,7 @@ static int shortest_path(vector<vector<int> > grid){
     auto n = grid.size();
     auto m = grid[0].size();
     auto size = n * m;
-    Graph graph(grid, size, true);
+    Graph<int> graph(grid, size, true);
     int total = graph.dijkstra(0, size - 1) + grid[0][0];
     return total;
 }

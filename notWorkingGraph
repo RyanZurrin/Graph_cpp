@@ -191,3 +191,243 @@ vector<vector<T>> Graph<T>::getComponents() {
     delete[] visited;
     return components;
 }
+
+__________________________________________________________________________________________
+__________________________________________________________________________________________
+//
+// Created by Ryan.Zurrin001 on 1/13/2022.
+//
+
+#ifndef GRAPH_CPP_FORD_FULKERSON_H
+#define GRAPH_CPP_FORD_FULKERSON_H
+#include "Flow_Network.h"
+#define DEBUG 1
+
+class Ford_Fulkerson {
+public:
+    Ford_Fulkerson(Flow_Network& G, int s, int t);
+    ~Ford_Fulkerson();
+    double value() const;
+    bool inCut(int v) const;
+    void validate(int v) const;
+    bool hasAugmentingPath(Flow_Network& G, int s, int t) const;
+    double excess(Flow_Network& G, int v) const;
+    bool isFeasible(Flow_Network& G, int s, int t) const;
+    bool check(Flow_Network& G, int s, int t) const;
+    string toString(Flow_Network& G) const;
+private:
+    int V_;
+    std::shared_ptr<vector<bool>> marked_;
+    std::shared_ptr<vector<std::shared_ptr<Flow_Edge>>> edgeTo_;
+    double value_;
+    int s_;
+    int t_;
+};
+
+Ford_Fulkerson::Ford_Fulkerson(Flow_Network &G, int s, int t) {
+    if (DEBUG) cout << "Ford_Fulkerson" << endl;
+    V_ = G.V();
+    validate(s);
+    validate(t);
+    this->s_ = s;
+    this->t_ = t;
+    if (DEBUG) cout << "s = " << s << " t = " << t << endl;
+
+    marked_ = std::make_shared<vector<bool>>(V_, false);
+    edgeTo_ = std::make_shared<vector<std::shared_ptr<Flow_Edge>>>(V_, nullptr);
+    value_ = excess(G, t);
+    if (DEBUG) cout << "value_ = " << value_ << endl;
+
+    while (hasAugmentingPath(G, s, t)) {
+        if (DEBUG) cout << "hasAugmentingPath" << endl;
+        double bottle = std::numeric_limits<double>::max();
+        if (DEBUG) cout << "bottle = " << bottle << endl;
+            for (int v = t; v != s; v = edgeTo_->at(v)->other(v)) {
+            bottle = std::min(bottle, edgeTo_->at(v)->residualCapacityTo(v));
+                if (DEBUG) cout << "bottle now is = " << bottle << endl;
+            }
+        for (int v = t; v != s; v = edgeTo_->at(v)->other(v)) {
+            edgeTo_->at(v)->addResidualFlowTo(v, bottle);
+        }
+        value_ += bottle;
+        if (DEBUG) cout << "value_ now is = " << value_ << endl;
+    }
+    if (DEBUG) cout << "end Ford_Fulkerson" << endl;
+    assert(check(G, s, t));
+}
+
+Ford_Fulkerson::~Ford_Fulkerson() {
+    marked_ = nullptr;
+    edgeTo_ = nullptr;
+}
+
+double Ford_Fulkerson::value() const {
+    if (DEBUG) cout << "value" << endl;
+        return value_;
+}
+
+bool Ford_Fulkerson::inCut(int v) const {
+    if (DEBUG) cout << "inCut and  value of marked_->at("<< v << ")" << endl;
+        validate(v);
+    return marked_->at(v);
+}
+
+void Ford_Fulkerson::validate(int v) const {
+    if (DEBUG) cout << "validate and V_ is " << V_ << endl;
+    if (v < 0 || v >= V_) {
+        throw std::invalid_argument("vertex " + std::to_string(v) +
+        " is not between 0 and " + std::to_string(V_ - 1));
+    }
+    if (DEBUG) cout << "end validate" << endl;
+}
+
+bool Ford_Fulkerson::hasAugmentingPath(Flow_Network& G, int s, int t) const {
+    if (DEBUG) cout << "hasAugmentingPath" << endl;
+    for (int v = 0; v < V_; v++) {
+        edgeTo_->at(v) = nullptr;
+        marked_->at(v) = false;
+    }
+    std::queue<int> q;
+    if (DEBUG) cout << "enqueue s and top of q is " << q.front() << endl;
+        q.push(s);
+    marked_->at(s) = true;
+    while (!q.empty()) {
+        int v = q.front();
+        if (DEBUG) cout << "dequeue v and int is " << v << endl;
+            q.pop();
+        for (auto i = 0; i < G.V(); i++) {
+            for (auto j = 0; j <G._adj[i].size(); j++) {
+                int w = G._adj[i][j]->other(i);
+                if (DEBUG) cout << "w is " << w << endl;
+                    if (G._adj[i][j]->residualCapacityTo(w) > 0) {
+                    if (!marked_->at(w)) {
+                        edgeTo_->at(w) = G._adj[i][j];
+                        if (DEBUG) cout << "edgeTo_->at(" << w << ") = " << edgeTo_->at(w)->toString() << endl;
+                        marked_->at(w) = true;
+                        if (DEBUG) cout << "enqueue w and top of q is " << q.front() << endl;
+                        q.push(w);
+                    }
+                }
+            }
+        }
+    }
+    if (DEBUG) cout << "end hasAugmentingPath" << endl;
+    return marked_->at(t);
+}
+
+double Ford_Fulkerson::excess(Flow_Network& G, int v) const {
+    if (DEBUG) cout << "excess" << endl;
+    double excess = 0.0;
+    for (auto i = 0; i < G.V(); i++) {
+        if (DEBUG) cout << "i is " << i << endl;
+        for (auto j = 0; j < G._adj[i].size(); j++) {
+            if (DEBUG) cout << "j is " << j << endl;
+            if (DEBUG) cout << "G._adj[i][j]->flow() is " << G._adj[i][j]->flow() << endl;
+            int w = G._adj[i][j]->other(i);
+            if (i == v) {
+                if (DEBUG) cout << "i == v" << endl;
+                excess -= G._adj[i][j]->flow();
+                if (DEBUG) cout << "excess -= G._adj[i][j]->flow() is " << G._adj[i][j]->flow() << endl;
+            }
+            if (w == v) {
+                if (DEBUG) cout << "w == v" << endl;
+                excess += G._adj[i][j]->flow();
+                if (DEBUG) cout << "excess += G._adj[i][j]->flow() is " << G._adj[i][j]->flow() << endl;
+            }
+        }
+    }
+    if (DEBUG) cout << "end excess" << endl;
+    return excess;
+}
+
+bool Ford_Fulkerson::isFeasible(Flow_Network& G, int s, int t) const {
+    if (DEBUG) cout << "isFeasible" << endl;
+    for (int v = 0; v < V_; v++) {
+        for (auto i = 0; i < G._adj[i].size(); i++) {
+           if (G._adj[v][i]->flow() < -FLOATING_POINT_EPSILON ||
+           G._adj[v][i]->flow() > G._adj[v][i]->capacity() + FLOATING_POINT_EPSILON) {
+               cout << "Edge does not satisfy capacity constraints: " <<
+               G._adj[v][i]->toString() << endl;
+               return false;
+           }
+        }
+
+    }
+    if (abs(value_ - excess(G, t)) > FLOATING_POINT_EPSILON) {
+        cout << "Excess at " << t << " = " << excess(G, t) << ", flow value = " <<
+        value_ << endl;
+        return false;
+    }
+    if (abs(value_ - excess(G, s)) > FLOATING_POINT_EPSILON) {
+        cout << "Excess at " << s << " = " << excess(G, s) << ", flow value = " <<
+        value_ << endl;
+        return false;
+    }
+    for (int v = 0; v < V_; v++) {
+        if (v == s || v == t) {
+            continue;
+        } else if (abs(excess(G, v)) > FLOATING_POINT_EPSILON) {
+            cout << "Net flow out of " << v << " doesn't equal zero" << endl;
+            return false;
+        }
+    }
+    if (DEBUG) cout << "end isFeasible and returning true" << endl;
+    return true;
+}
+
+bool Ford_Fulkerson::check(Flow_Network& G, int s, int t) const {
+    if (DEBUG) cout << "check" << endl;
+    if (!isFeasible(G, s, t)) {
+        cout << "Flow is infeasible" << endl;
+        return false;
+    }
+    if (!inCut(s)) {
+        cout <<"source " << s << " is not on the source side of min cut" << endl;
+        return false;
+    }
+    if (inCut(t)) {
+        cout << "sink " << t << " is on the source side of min cut" << endl;
+        return false;
+    }
+    double mincutValue = 0.0;
+    for (int v = 0; v < V_; v++) {
+        for (int e = 0; e < G._adj[v].size(); e++) {
+            if ((v == G._adj[v][e]->from() && inCut(G._adj[v][e]->from())) &&
+            !inCut(G._adj[v][e]->to())) {
+                mincutValue += G._adj[v][e]->capacity();
+            }
+        }
+    }
+    if (abs(mincutValue - value_) > FLOATING_POINT_EPSILON) {
+        cout << "Max flow value = " << value_ << ", min cut value = " <<
+        mincutValue << endl;
+        return false;
+    }
+    if (DEBUG) cout << "end check and returning true" << endl;
+    return true;
+}
+
+string Ford_Fulkerson::toString(Flow_Network& G) const {
+    stringstream ss;
+    ss << "Max flow from " << s_ << " to " << t_ << ":\n";
+    for (int v = 0; v < V_; v++) {
+        for (int e = 0; e < G._adj[v].size(); e++) {
+            if (v == G._adj[v][e]->from() && G._adj[v][e]->flow() > 0) {
+                ss << " " << G._adj[v][e]->toString() << endl;
+            }
+        }
+    }
+    ss << "Min cut: ";
+    for (int v = 0; v < V_; v++) {
+        if (inCut(v)) {
+            ss << v << " ";
+        }
+    }
+    ss << endl;
+    ss << "Max flow value = " << value_ << endl;
+    return ss.str();
+}
+
+
+
+#endif //GRAPH_CPP_FORD_FULKERSON_H
