@@ -451,5 +451,43 @@ _____________________________________________________________________
     Flow_Network G(1000, 10000);
     cout << G << endl;
 
+    int n, k;
+    do {
+        cin >> n >> k;
+        int dp[1000] = {0};
+        // build a timer to time how how long it takes to solve the problem
+        clock_t start = clock();
+       // cout << countWays(n, k) << endl;
+        clock_t end = clock();
+        double time = (double)(end - start) / CLOCKS_PER_SEC;
+        cout << "Time 1: " << time << endl;
+        cout << endl;
+
+        start = clock();
+        cout << countWaysTD(n, k, dp) << endl;
+        end = clock();
+        time = (double)(end - start) / CLOCKS_PER_SEC;
+        cout << "Time 2: " << time << endl;
+
+        start = clock();
+        cout << countWaysBU(n, k) << endl;
+        end = clock();
+        time = (double)(end - start) / CLOCKS_PER_SEC;
+        cout << "Time 3: " << time << endl;
+        cout << endl;
+
+        start = clock();
+        cout << countWaysOptBU(n, k) << endl;
+        end = clock();
+        time = (double)(end - start) / CLOCKS_PER_SEC;
+        cout << "Time 4: " << time << endl;
+        cout << endl;
+
+
+    } while (n != 0 && k != 0);
+
+
+
+
 
  */
