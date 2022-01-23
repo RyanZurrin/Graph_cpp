@@ -237,6 +237,8 @@ public:
      // __________________________Graph Setter Methods__________________________
      void addVertex(T i); // add a vertex to the graph
      void addVertex(pair<int,T> i); // add a vertex to the graph
+     // add node to graph
+     void addNode(GraphNode<T>* node);
      void addEdge(T node1, T node2); // add an edge to the graph
      void addEdge(T node1, T node2, double weight); // add weighted edge
      void addEdge(pair<int,T> node1, pair<int, T> node2); // add an edge to the graph
@@ -259,6 +261,8 @@ public:
      int                getNumberOfComponents();
      int                getDegree(T node);
      int                getCombinations();
+     vector<vector<T>>  getAdjMatrix();
+     Graph<T>           getTranspose();
 
      // ____________________Graph Removal Methods_______________________________
      void               removeEdge(T node1, T node2);
@@ -272,19 +276,26 @@ public:
      bool               cycleFromVertex(T node);
      bool               bipartite();
      bool               hasEdge(T node1, T node2);
+     bool               isTree();
+     bool               isDAG();
 
-     // ____________________Graph Traversal Methods_____________________________
+     // ____________________Graph Traversal Algorithms_____________________________
      void               bfs( T src);
      void               dfs(T src);
      double             dijkstra(T src, T dest);
      vector<T>          shortestPath(T src, T dest, bool print = false);
      vector<vector<T>>  shortestPaths(T src, bool print = false);
      vector<pair<T,T>>  dijkstra(T src, T dest, bool print);
+     // bellman ford
+     vector<pair<T,T>>  bellmanFord(T src, T dest, bool print = false);
 
      // ______________________Graph Misc. Methods_______________________________
      void findBackEdges(vector<pair<T,T>>& backEdges);
      int minDistance(const int *pInt, const bool *pBoolean);
      double pathLength(T node1, T node2);
+     vector<T> topologicalSort();
+     vector<vector<T>> stronglyConnectedComponents();
+
 
      // ______________________Graph Print Methods_______________________________
      void print();
@@ -309,6 +320,7 @@ public:
     ConstGraphIterator find(T key) const { return nodes.find(key); }
 
 
+
 private:
     unordered_map<int, std::shared_ptr<GraphNode<T>>> nodes; // the graph
     int     V{}; // number of vertices
@@ -327,6 +339,7 @@ private:
     void    bfsUtil(T src, const bool* visited,const bool* recur);
     void    dfsUtil( T src, bool* visited, bool* recur);
     void    dfsUtil(T src, bool* visited);
+    void    dfsUtil(int v, bool visited[], vector<T> &comp);
     bool    hasCycleUtil( T node, bool* visited, bool* recur, T parent);
     bool    isConnectedUtil( int i, bool* visited);
     bool    findComponentsUtil( int i, bool* visited, vector<T>& components);
@@ -337,6 +350,9 @@ private:
     bool    isBipartiteUtil( T node,  bool* visited, int* color);
     int     encode(int i, int j, int rows, int cols, bool rowMajor = true);
     double  pathLengthUtil(T node1, T node2);
+    void    fillOrder(int v, bool visited[], stack<T> &Stack);
+
+
 
 };
 // _______________________________end graph class_______________________________
@@ -1032,6 +1048,36 @@ bool Graph<T>::hasEdge(T node1, T node2) {
     }
     return false;
 }
+
+
+template<class T>
+bool Graph<T>::isTree() {
+    // check if the graph is directed and has no cycles
+    if (isDirected) {
+        return false;
+    }
+    // check if the graph has cycles
+    bool cycles = this->cycle();
+    if (cycles) {
+        return false;
+    }
+    return true;
+}
+
+template<class T>
+bool Graph<T>::isDAG() {
+    // check if the graph is directed and acyclic
+    if (!isDirected) {
+        return false;
+    }
+    // check if the graph has cycles
+    bool cycles = this->cycle();
+    if (cycles) {
+        return false;
+    }
+    return true;
+}
+
 // _____________________________end findEdge____________________________________
 /**
  * @brief returns the isDirected property of the graph
@@ -1225,12 +1271,6 @@ double Graph<T>::dijkstra( T src, T dest) {
             }
         }
     }
-//    // Single source shortest path to all other nodes
-//    for (int i = 0; i < V; ++i) {
-//        cout << "Distance of " << i << " is " << distances[i] << endl;
-//    }
-//    cout  << endl;
-    // check if the distance is INT_MAX
     if (distances[dest] == INT_MAX) {
         return -1;
     }
@@ -1256,6 +1296,15 @@ vector<pair<T,T>> Graph<T>::dijkstra( T src,
     }
     if (src == dest) {
         throw invalid_argument("Source and destination are the same");
+    }
+    // check all the weights to make sure no negative weights
+    for (auto node : nodes) {
+        for (auto neighbor : node.second->neighbors) {
+            if (neighbor.second < 0) {
+                cout << "Negative edge weights are not allowed" << endl;
+                return vector<pair<T,T>>();
+            }
+        }
     }
     vector<double> distances(V+deletedVertices, INT_MAX);
     set<pair<double, T>> s;
@@ -1300,9 +1349,7 @@ vector<pair<T,T>> Graph<T>::dijkstra( T src,
  * @return  : vector of nodes in the shortest path, empty vector if no path exists
  */
 template<class T> 
-vector<T> Graph<T>::shortestPath( T src,
-                                  T dest,
-                                  bool print) {
+vector<T> Graph<T>::shortestPath(T src, T dest, bool print) {
     if (nodes.find(src) == nodes.end()) {
         throw invalid_argument("Source node does not exist");
     }
@@ -1977,6 +2024,198 @@ Graph<T>::~Graph() {
         it->second.reset();
     }
 }
+
+template<class T>
+vector<T> Graph<T>::topologicalSort() {
+    // check that the graph is a directed acyclic graph
+    if (!isDAG()) {
+        cout << "Graph is not a directed acyclic graph" << endl;
+        return vector<T>();
+    }
+    // use a stack to store the nodes in topological order
+    vector<T> topologicalOrder;
+    std::unique_ptr<bool[]> visited = std::make_unique<bool[]>(V+ deletedVertices);
+    std::unique_ptr<int[]> inDegree = std::make_unique<int[]>(V+ deletedVertices);
+    for (int i = 0; i < V+deletedVertices; i++) {
+        inDegree[i] = 0;
+        visited[i] = false;
+    }
+    for (auto it = nodes.begin(); it != nodes.end(); it++) {
+        for (auto it2 = it->second->neighbors.begin(); it2 !=
+                  it->second->neighbors.end(); it2++) {
+            inDegree[it2->first]++;
+        }
+    }
+    queue<T> q;
+    for (int i = 0; i < V+deletedVertices; i++) {
+        if (inDegree[i] == 0) {
+            q.push(i);
+        }
+    }
+    while (!q.empty()) {
+        auto u = q.front();
+        q.pop();
+        visited[u] = true;
+        topologicalOrder.push_back(u);
+        for (auto it = nodes[u]->neighbors.begin(); it !=
+                  nodes[u]->neighbors.end(); it++) {
+            inDegree[it->first]--;
+            if (inDegree[it->first] == 0) {
+                q.push(it->first);
+            }
+        }
+    }
+    return topologicalOrder;
+}
+
+template<class T>
+vector<vector<T>> Graph<T>::stronglyConnectedComponents() {
+    // use Kosaraju's algorithm to find the strongly connected components
+    stack<T> s;
+    bool *visited = new bool[V+deletedVertices];
+    for (int i = 0; i < V+deletedVertices; i++) {
+        visited[i] = false;
+    }
+    vector<vector<T>> scc;
+    // fill vertices in stack according to their finishing times
+    for (int i = 0; i < V+deletedVertices; i++) {
+        if (!visited[i]) {
+            fillOrder(i, visited, s);
+        }
+    }
+    // create a reversed graph
+    Graph<T> reversedGraph = getTranspose();
+    for (int i = 0; i < V+deletedVertices; i++) {
+        visited[i] = false;
+    }
+    // process all vertices in order defined by their finishing times
+    while (!s.empty()) {
+        auto u = s.top();
+        s.pop();
+        if (!visited[u]) {
+            vector<T> component;
+            reversedGraph.dfsUtil(u, visited, component);
+            scc.push_back(component);
+        }
+    }
+    return scc;
+}
+
+template<class T>
+Graph<T> Graph<T>::getTranspose() {
+    // make and adjacency list from the graph then transpose it
+    auto adj = getAdjMatrix();
+    Graph<T> g(V+deletedVertices, this->isDirected);
+    for (int i = 0; i < adj.size(); i++) {
+        for (int j = 0; j < adj[i].size(); j++) {
+            if (adj[i][j] == 1) {
+                g.addEdge(j, i);
+            }
+        }
+    }
+    return g;
+}
+
+template<class T>
+void Graph<T>::fillOrder(int v, bool *visited, stack<T> &Stack) {
+    // use DFS to fill the stack with the nodes in topological order
+    visited[v] = true;
+    for (auto it = nodes[v]->neighbors.begin(); it !=
+              nodes[v]->neighbors.end(); it++) {
+        if (!visited[it->first]) {
+            fillOrder(it->first, visited, Stack);
+        }
+    }
+    Stack.push(v);
+}
+
+template<class T>
+void Graph<T>::dfsUtil(int v, bool *visited, vector<T> &comp) {
+    visited[v] = true;
+    comp.push_back(v);
+    for (auto it = nodes[v]->neighbors.begin(); it !=
+              nodes[v]->neighbors.end(); it++) {
+        if (!visited[it->first]) {
+            dfsUtil(it->first, visited, comp);
+        }
+    }
+}
+
+template<class T>
+void Graph<T>::addNode(GraphNode<T> *node) {
+    // add a node to the graph
+    nodes[node->id] = node;
+}
+
+template<class T>
+vector<vector<T>> Graph<T>::getAdjMatrix() {
+    // return the adjacency matrix
+    vector<vector<T>> adj(V+deletedVertices, vector<T>(V+deletedVertices, 0));
+    for (auto it = nodes.begin(); it != nodes.end(); it++) {
+        for (auto it2 = it->second->neighbors.begin(); it2 !=
+                  it->second->neighbors.end(); it2++) {
+            adj[it->first][it2->first] = 1;
+        }
+    }
+    return adj;
+}
+
+template<class T>
+vector<pair<T, T>> Graph<T>::bellmanFord(T src, T dest, bool print) {
+    // use Bellman-Ford algorithm to find the shortest path from src to dest
+    vector<pair<T, T>> shortestPath;
+    vector<T> dist(V+deletedVertices, INT_MAX);
+    dist[src] = 0;
+    for (int i = 0; i < V+deletedVertices-1; i++) {
+        for (auto it = nodes.begin(); it != nodes.end(); it++) {
+            for (auto it2 = it->second->neighbors.begin(); it2 !=
+                      it->second->neighbors.end(); it2++) {
+                if (dist[it->first] != INT_MAX && dist[it->first] + it2->second < dist[it2->first]) {
+                    dist[it2->first] = dist[it->first] + it2->second;
+                }
+            }
+        }
+    }
+    for (auto it = nodes.begin(); it != nodes.end(); it++) {
+        for (auto it2 = it->second->neighbors.begin(); it2 !=
+                  it->second->neighbors.end(); it2++) {
+            if (dist[it->first] != INT_MAX && dist[it->first] + it2->second < dist[it2->first]) {
+                if (print) {
+                    cout << "Graph contains negative weight cycle" << endl;
+                }
+                return shortestPath;
+            }
+        }
+    }
+    if (print) {
+        cout << "Shortest path from " << src << " to " << dest << " is " << dist[dest] << endl;
+    }
+    shortestPath.push_back(make_pair(src, dest));
+    while (dist[dest] != 0) {
+        for (auto it = nodes.begin(); it != nodes.end(); it++) {
+            for (auto it2 = it->second->neighbors.begin(); it2 !=
+                      it->second->neighbors.end(); it2++) {
+                if (dist[it->first] != INT_MAX && dist[it->first] + it2->second == dist[it2->first - deletedVertices]) {
+                    shortestPath.push_back(make_pair(it->first, it2->first));
+                    dist[it2->first] = 0;
+                    break;
+                }
+            }
+        }
+    }
+    // reverse the path
+    reverse(shortestPath.begin(), shortestPath.end());
+    if (print) {
+        cout << "Shortest path from " << src << " to " << dest << " is:\n";
+        for (auto it = shortestPath.begin(); it != shortestPath.end(); it++) {
+            cout << it->first << "->" << it->second << endl;
+        }
+    }
+    return shortestPath;
+}
+
+
+
 
 
 
