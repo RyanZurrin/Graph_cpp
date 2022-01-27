@@ -237,6 +237,8 @@ public:
      // __________________________Graph Setter Methods__________________________
      void addVertex(T i); // add a vertex to the graph
      void addVertex(pair<int,T> i); // add a vertex to the graph
+     // add node to graph
+     void addNode(GraphNode<T>* node);
      void addEdge(T node1, T node2); // add an edge to the graph
      void addEdge(T node1, T node2, double weight); // add weighted edge
      void addEdge(pair<int,T> node1, pair<int, T> node2); // add an edge to the graph
@@ -259,6 +261,11 @@ public:
      int                getNumberOfComponents();
      int                getDegree(T node);
      int                getCombinations();
+     vector<vector<T>>  getAdjMatrix();
+     vector<pair<pair<T,T>,double>>  getEdges();
+     vector<pair<T,T>>  getBridges();
+     vector<T>          getArticulationPoints();
+     Graph<T>           getTranspose();
 
      // ____________________Graph Removal Methods_______________________________
      void               removeEdge(T node1, T node2);
@@ -272,19 +279,26 @@ public:
      bool               cycleFromVertex(T node);
      bool               bipartite();
      bool               hasEdge(T node1, T node2);
+     bool               isTree();
+     bool               isDAG();
 
-     // ____________________Graph Traversal Methods_____________________________
+     // ____________________Graph Traversal Algorithms_____________________________
      void               bfs( T src);
      void               dfs(T src);
      double             dijkstra(T src, T dest);
      vector<T>          shortestPath(T src, T dest, bool print = false);
      vector<vector<T>>  shortestPaths(T src, bool print = false);
      vector<pair<T,T>>  dijkstra(T src, T dest, bool print);
+     // bellman ford
+     vector<pair<T,T>>  bellmanFord(T src,bool print = false);
 
      // ______________________Graph Misc. Methods_______________________________
      void findBackEdges(vector<pair<T,T>>& backEdges);
      int minDistance(const int *pInt, const bool *pBoolean);
      double pathLength(T node1, T node2);
+     vector<T> topologicalSort();
+     vector<vector<T>> stronglyConnectedComponents();
+
 
      // ______________________Graph Print Methods_______________________________
      void print();
@@ -309,6 +323,7 @@ public:
     ConstGraphIterator find(T key) const { return nodes.find(key); }
 
 
+
 private:
     unordered_map<int, std::shared_ptr<GraphNode<T>>> nodes; // the graph
     int     V{}; // number of vertices
@@ -327,6 +342,7 @@ private:
     void    bfsUtil(T src, const bool* visited,const bool* recur);
     void    dfsUtil( T src, bool* visited, bool* recur);
     void    dfsUtil(T src, bool* visited);
+    void    dfsUtil(int v, bool visited[], vector<T> &comp);
     bool    hasCycleUtil( T node, bool* visited, bool* recur, T parent);
     bool    isConnectedUtil( int i, bool* visited);
     bool    findComponentsUtil( int i, bool* visited, vector<T>& components);
@@ -337,6 +353,15 @@ private:
     bool    isBipartiteUtil( T node,  bool* visited, int* color);
     int     encode(int i, int j, int rows, int cols, bool rowMajor = true);
     double  pathLengthUtil(T node1, T node2);
+    void    fillOrder(int v, bool visited[], stack<T> &Stack);
+    void    sccUtil(int u, int* disc, int* low, stack<T> *st, bool* stackMember,
+                    vector<vector<T>> &scc);
+    void    bridgeUtil(int u, bool* visited, int* disc, int* low, int* parent,
+                    vector<pair<T,T>> &bridges);
+    void    articulationPointUtil(int i, bool* visited, int* disc, int* low, int* parent,
+                                  vector<T>& articulationPoints);
+
+
 
 };
 // _______________________________end graph class_______________________________
@@ -1032,6 +1057,36 @@ bool Graph<T>::hasEdge(T node1, T node2) {
     }
     return false;
 }
+
+
+template<class T>
+bool Graph<T>::isTree() {
+    // check if the graph is directed and has no cycles
+    if (isDirected) {
+        return false;
+    }
+    // check if the graph has cycles
+    bool cycles = this->cycle();
+    if (cycles) {
+        return false;
+    }
+    return true;
+}
+
+template<class T>
+bool Graph<T>::isDAG() {
+    // check if the graph is directed and acyclic
+    if (!isDirected) {
+        return false;
+    }
+    // check if the graph has cycles
+    bool cycles = this->cycle();
+    if (cycles) {
+        return false;
+    }
+    return true;
+}
+
 // _____________________________end findEdge____________________________________
 /**
  * @brief returns the isDirected property of the graph
@@ -1135,7 +1190,17 @@ int Graph<T>::getCombinations() {
     return total;
 }
 // ________________________end getCombinations_________________________________
-
+template<class T>
+vector<pair<pair<T,T>, double>> Graph<T>::getEdges() {
+    // return the edges of the graph incuding weights between each node
+    vector<pair<pair<T,T>, double>> edges;
+    for (auto it = nodes.begin(); it != nodes.end(); it++) {
+        for (auto it2 = it->second->neighbors.begin(); it2 != it->second->neighbors.end(); it2++) {
+            edges.push_back(make_pair(make_pair(it->first, it2->first), it2->second));
+        }
+    }
+    return edges;
+}
 /**
  * @brief returns the length between vertices node1 and node2
  * @param node1  : first node
@@ -1225,12 +1290,6 @@ double Graph<T>::dijkstra( T src, T dest) {
             }
         }
     }
-//    // Single source shortest path to all other nodes
-//    for (int i = 0; i < V; ++i) {
-//        cout << "Distance of " << i << " is " << distances[i] << endl;
-//    }
-//    cout  << endl;
-    // check if the distance is INT_MAX
     if (distances[dest] == INT_MAX) {
         return -1;
     }
@@ -1256,6 +1315,15 @@ vector<pair<T,T>> Graph<T>::dijkstra( T src,
     }
     if (src == dest) {
         throw invalid_argument("Source and destination are the same");
+    }
+    // check all the weights to make sure no negative weights
+    for (auto node : nodes) {
+        for (auto neighbor : node.second->neighbors) {
+            if (neighbor.second < 0) {
+                cout << "Negative edge weights are not allowed" << endl;
+                return vector<pair<T,T>>();
+            }
+        }
     }
     vector<double> distances(V+deletedVertices, INT_MAX);
     set<pair<double, T>> s;
@@ -1300,9 +1368,7 @@ vector<pair<T,T>> Graph<T>::dijkstra( T src,
  * @return  : vector of nodes in the shortest path, empty vector if no path exists
  */
 template<class T> 
-vector<T> Graph<T>::shortestPath( T src,
-                                  T dest,
-                                  bool print) {
+vector<T> Graph<T>::shortestPath(T src, T dest, bool print) {
     if (nodes.find(src) == nodes.end()) {
         throw invalid_argument("Source node does not exist");
     }
@@ -1978,21 +2044,315 @@ Graph<T>::~Graph() {
     }
 }
 
+template<class T>
+vector<T> Graph<T>::topologicalSort() {
+    // check that the graph is a directed acyclic graph
+    if (!isDAG()) {
+        cout << "Graph is not a directed acyclic graph" << endl;
+        return vector<T>();
+    }
+    // use a stack to store the nodes in topological order
+    vector<T> topologicalOrder;
+    std::unique_ptr<bool[]> visited = std::make_unique<bool[]>(V+ deletedVertices);
+    std::unique_ptr<int[]> inDegree = std::make_unique<int[]>(V+ deletedVertices);
+    for (int i = 0; i < V+deletedVertices; i++) {
+        inDegree[i] = 0;
+        visited[i] = false;
+    }
+    for (auto it = nodes.begin(); it != nodes.end(); it++) {
+        for (auto it2 = it->second->neighbors.begin(); it2 !=
+                  it->second->neighbors.end(); it2++) {
+            inDegree[it2->first]++;
+        }
+    }
+    queue<T> q;
+    for (int i = 0; i < V+deletedVertices; i++) {
+        if (inDegree[i] == 0) {
+            q.push(i);
+        }
+    }
+    while (!q.empty()) {
+        auto u = q.front();
+        q.pop();
+        visited[u] = true;
+        topologicalOrder.push_back(u);
+        for (auto it = nodes[u]->neighbors.begin(); it !=
+                  nodes[u]->neighbors.end(); it++) {
+            inDegree[it->first]--;
+            if (inDegree[it->first] == 0) {
+                q.push(it->first);
+            }
+        }
+    }
+    return topologicalOrder;
+}
 
+template<class T>
+vector<vector<T>> Graph<T>::stronglyConnectedComponents() {
+    // use Tarjan's algorithm to find the strongly connected components
+    vector<vector<T>> scc;
+    int* disc = new int[V+deletedVertices];
+    int* low = new int[V+deletedVertices];
+    bool* stackMember = new bool[V+deletedVertices];
+    for (int i = 0; i < V+deletedVertices; i++) {
+        disc[i] = -1;
+        low[i] = -1;
+        stackMember[i] = false;
+    }
+    stack<T>* st = new stack<T>();
+    for (int i = 0; i < V+deletedVertices; i++) {
+        if (disc[i] == -1) {
+            sccUtil(i, disc, low,  st, stackMember, scc);
+        }
+    }
+    delete[] disc;
+    delete[] low;
+    delete[] stackMember;
+    delete st;
+    return scc;
+}
 
+template<class T>
+Graph<T> Graph<T>::getTranspose() {
+    // make and adjacency list from the graph then transpose it
+    auto adj = getAdjMatrix();
+    Graph<T> g(V+deletedVertices, this->isDirected);
+    for (int i = 0; i < adj.size(); i++) {
+        for (int j = 0; j < adj[i].size(); j++) {
+            if (adj[i][j] == 1) {
+                g.addEdge(j, i);
+            }
+        }
+    }
+    return g;
+}
 
+template<class T>
+void Graph<T>::fillOrder(int v, bool *visited, stack<T> &Stack) {
+    // use DFS to fill the stack with the nodes in topological order
+    visited[v] = true;
+    for (auto it = nodes[v]->neighbors.begin(); it !=
+              nodes[v]->neighbors.end(); it++) {
+        if (!visited[it->first]) {
+            fillOrder(it->first, visited, Stack);
+        }
+    }
+    Stack.push(v);
+}
 
+template<class T>
+void Graph<T>::dfsUtil(int v, bool *visited, vector<T> &comp) {
+    visited[v] = true;
+    comp.push_back(v);
+    for (auto it = nodes[v]->neighbors.begin(); it !=
+              nodes[v]->neighbors.end(); it++) {
+        if (!visited[it->first]) {
+            dfsUtil(it->first, visited, comp);
+        }
+    }
+}
 
+template<class T>
+void Graph<T>::addNode(GraphNode<T> *node) {
+    // add a node to the graph
+    nodes[node->id] = node;
+}
 
+template<class T>
+vector<vector<T>> Graph<T>::getAdjMatrix() {
+    // return the adjacency matrix
+    vector<vector<T>> adj(V+deletedVertices, vector<T>(V+deletedVertices, 0));
+    for (auto it = nodes.begin(); it != nodes.end(); it++) {
+        for (auto it2 = it->second->neighbors.begin(); it2 !=
+                  it->second->neighbors.end(); it2++) {
+            if (isWeighted) {
+                adj[it->first][it2->first] = it2->second;
+            } else {
+                adj[it->first][it2->first] = 1;
+            }
+        }
+    }
+    return adj;
+}
 
+template<class T>
+vector<pair<T, T>> Graph<T>::bellmanFord(T src, bool print) {
+    // use Bellman-Ford algorithm to find the shortest path from src to dest
+    vector<pair<T, T>> shortestPath;
+    int v = V+deletedVertices;
+    int e = E;
+    vector<pair<pair<T,T>,double>> edges = getEdges();
+    vector<double> dist(v, numeric_limits<double>::max());
+    dist[src] = 0;
+    for (int i = 0; i < v-1; i++) {
+        for (int j = 0; j < e; j++) {
+            int s = edges[j].first.first;
+            int t = edges[j].first.second;
+            double weight = edges[j].second;
+            if (dist[s] != numeric_limits<double>::max() &&
+                dist[s] + weight < dist[t]) {
+                dist[t] = dist[s] + weight;
+            }
+        }
+    }
+    for (int j = 0; j < e; j++) {
+        int s = edges[j].first.first;
+        int t = edges[j].first.second;
+        double weight = edges[j].second;
+        if (dist[s] != numeric_limits<double>::max() &&
+            dist[s] + weight < dist[t]) {
+            if (print) {
+                cout << "Graph contains negative weight cycle" << endl;
+            }
+            return shortestPath;
+        }
+    }
+    for (int i = 0; i < v; i++) {
+        if (dist[i] != numeric_limits<double>::max()) {
+            shortestPath.push_back(make_pair(i, dist[i]));
+        }
+    }
+    if (print) {
+        printf("Vertex -- Distance from %d:\n", src);
+        for (int i = 0; i < v; i++) {
+            if (dist[i] != numeric_limits<double>::max()) {
+                printf("  %d   \t      %f\n", i, dist[i]);
+            }
+        }
+    }
+    return shortestPath;
+}
 
+template<class T>
+vector<pair<T, T>> Graph<T>::getBridges() {
+    vector<pair<T, T>> bridges;
+    bool *visited = new bool[V+deletedVertices];
+    int *disc = new int[V+deletedVertices];
+    int *low = new int[V+deletedVertices];
+    int *parent = new int[V+deletedVertices];
+    for (int i = 0; i < V+deletedVertices; i++) {
+        visited[i] = false;
+        disc[i] = numeric_limits<int>::max();
+        low[i] = numeric_limits<int>::max();
+        parent[i] = -1;
+    }
+    for (int i = 0; i < V+deletedVertices; i++) {
+        if (!visited[i]) {
+            bridgeUtil(i, visited, disc, low, parent, bridges);
+        }
+    }
+    delete[] visited;
+    delete[] disc;
+    delete[] low;
+    delete[] parent;
+    return bridges;
+}
 
+template<class T>
+void
+Graph<T>::sccUtil(int u, int *disc, int *low, stack<T> *st, bool *stackMember,
+                  vector<vector<T>> &scc) {
+    static int time = 0;
+    disc[u] = low[u] = ++time;
+    st->push(u);
+    stackMember[u] = true;
+    for (auto it = nodes[u]->neighbors.begin(); it !=
+              nodes[u]->neighbors.end(); it++) {
+        if (disc[it->first] == -1) {
+            sccUtil(it->first, disc, low, st, stackMember, scc);
+            low[u] = min(low[u], low[it->first]);
+        } else if (stackMember[it->first]) {
+            low[u] = min(low[u], disc[it->first]);
+        }
+    }
+    if (low[u] == disc[u]) {
+        vector<T> scc_temp;
+        while (1) {
+            T x = st->top();
+            st->pop();
+            stackMember[x] = false;
+            scc_temp.push_back(x);
+            if (x == u) {
+                break;
+            }
+        }
+        scc.push_back(scc_temp);
+    }
+}
 
+template<class T>
+void
+Graph<T>::bridgeUtil(int u, bool *visited, int *disc, int *low, int *parent,
+                     vector<pair<T, T>> &bridges) {
+    static int time = 0;
+    visited[u] = true;
+    disc[u] = low[u] = ++time;
+    for (auto it = nodes[u]->neighbors.begin(); it !=
+              nodes[u]->neighbors.end(); it++) {
+        if (!visited[it->first]) {
+            parent[it->first] = u;
+            bridgeUtil(it->first, visited, disc, low, parent, bridges);
+            low[u] = min(low[u], low[it->first]);
+            if (low[it->first] > disc[u]) {
+                bridges.push_back(make_pair(u, it->first));
+            }
+        } else if (it->first != parent[u]) {
+            low[u] = min(low[u], disc[it->first]);
+        }
+    }
+}
 
+template<class T>
+vector<T> Graph<T>::getArticulationPoints() {
+    vector<T> articulationPoints;
+    bool *visited = new bool[V+deletedVertices];
+    int *disc = new int[V+deletedVertices];
+    int *low = new int[V+deletedVertices];
+    int *parent = new int[V+deletedVertices];
+    for (int i = 0; i < V+deletedVertices; i++) {
+        visited[i] = false;
+        disc[i] = numeric_limits<int>::max();
+        low[i] = numeric_limits<int>::max();
+        parent[i] = -1;
+    }
+    for (int i = 0; i < V+deletedVertices; i++) {
+        if (!visited[i]) {
+            articulationPointUtil(i, visited, disc, low, parent,
+                                  articulationPoints);
+        }
+    }
+    delete[] visited;
+    delete[] disc;
+    delete[] low;
+    delete[] parent;
+    return articulationPoints;
+}
 
-
-// __________________________end destructor_____________________________________
-
+template<class T>
+void Graph<T>::articulationPointUtil(int i, bool *visited, int *disc, int *low,
+                                     int *parent, vector<T> &articulationPoints) {
+    static int time = 0;
+    visited[i] = true;
+    disc[i] = low[i] = ++time;
+    int children = 0;
+    for (auto it = nodes[i]->neighbors.begin(); it !=
+              nodes[i]->neighbors.end(); it++) {
+        if (!visited[it->first]) {
+            children++;
+            parent[it->first] = i;
+            articulationPointUtil(it->first, visited, disc, low, parent,
+                                  articulationPoints);
+            low[i] = min(low[i], low[it->first]);
+            if (parent[i] == -1 && children > 1) {
+                articulationPoints.push_back(i);
+            } else if (parent[i] != -1 && low[it->first] >= disc[i]) {
+                articulationPoints.push_back(i);
+            }
+        } else if (it->first != parent[i]) {
+            low[i] = min(low[i], disc[it->first]);
+        }
+    }
+}
 
 
 #endif //GRAPH_CPP_GRAPH_H
